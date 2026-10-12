@@ -10,7 +10,7 @@ A browser simulation of a communication framework for a defensive drone swarm. E
 
 The coordinator is simply the lowest ID a node has heard from recently. The ground station is ID 0, so it leads whenever it's reachable, and a drone takes over automatically when it isn't.
 
-**Live page:** see the repository's GitHub Pages link.
+**Live page:** https://mailabhiramsrinivas-art.github.io/swarm-comms-lab/
 
 ## Run locally
 
