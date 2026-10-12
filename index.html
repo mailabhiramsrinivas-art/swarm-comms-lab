@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swarm Comms Lab</title>
+  <meta name="description" content="A browser simulation of a three-layer communication framework for a defensive drone swarm: coordinator plans, peer claims, and solo fallback.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>
+      <span>Swarm Comms Lab</span>
+      <span class="ver" id="version">v0.1.0</span>
+    </div>
+    <nav>
+      <a href="#sim">Simulator</a>
+      <a href="#framework">Framework</a>
+      <a href="#experiments">Experiments</a>
+      <a href="#roadmap">Roadmap</a>
+      <a id="repoLink" href="#">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="sim" class="sim">
+      <div class="stage">
+        <div class="toolbar">
+          <button id="play" class="btn">Pause</button>
+          <button id="reset" class="btn" title="Restart the scenario (R)">Reset</button>
+          <button id="wave" class="btn" title="Launch a wave now (W)">Launch wave</button>
+          <button id="killCoord" class="btn danger" title="Destroy the current coordinator (K)">Kill coordinator</button>
+          <button id="respawn" class="btn" title="Bring back destroyed drones and the ground station">Respawn lost</button>
+          <div class="seg" id="speed" role="group" aria-label="Speed">
+            <button data-v="0.25">¼×</button><button data-v="0.5">½×</button><button data-v="1" class="on">1×</button><button data-v="2">2×</button><button data-v="4">4×</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="view" aria-label="Swarm simulation"></canvas>
+        </div>
+        <p class="note" id="presetNote"></p>
+
+        <div class="legend">
+          <span><i class="sw" style="--c:var(--l3)"></i>Layer 3: following the coordinator's plan</span>
+          <span><i class="sw" style="--c:var(--l2)"></i>Layer 2: negotiating with peer claims</span>
+          <span><i class="sw" style="--c:var(--l1)"></i>Layer 1: solo, own camera only</span>
+          <span><i class="sw hex" style="--c:var(--gs)"></i>Ground station (ID 0)</span>
+          <span><i class="sw ring"></i>★ Coordinator</span>
+          <span><i class="sw dia"></i>Enemy (hollow = unseen)</span>
+        </div>
+
+        <div class="stats">
+          <div class="tile"><span>Time</span><b id="s-time">0 s</b></div>
+          <div class="tile"><span>Intercepted</span><b id="s-int" class="good">0</b></div>
+          <div class="tile"><span>Breaches</span><b id="s-breach" class="bad">0</b></div>
+          <div class="tile"><span>Avg response</span><b id="s-resp">–</b></div>
+          <div class="tile"><span>Coordinator</span><b id="s-coord">–</b></div>
+          <div class="tile"><span>Network groups</span><b id="s-part">1</b></div>
+          <div class="tile"><span>Messages / s</span><b id="s-msgs">0</b></div>
+          <div class="tile"><span>Bandwidth</span><b id="s-bw">0</b></div>
+          <div class="tile"><span>Claims resolved</span><b id="s-yield">0</b></div>
+          <div class="tile"><span>Over-assigned now</span><b id="s-over">0</b></div>
+          <div class="tile"><span>Elections</span><b id="s-elect">0</b></div>
+          <div class="tile wide" id="s-layers"><span>Drones by layer</span>
+            <div class="layerbar"><i id="lb-3" style="--c:var(--l3)"></i><i id="lb-2" style="--c:var(--l2)"></i><i id="lb-1" style="--c:var(--l1)"></i></div>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="card">
+            <h3>Traffic by message type</h3>
+            <div id="msgbars" class="msgbars"></div>
+          </div>
+          <div class="card">
+            <h3>Event log</h3>
+            <ol id="log" class="log"></ol>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="card">
+          <h3>Scenarios</h3>
+          <div id="presets" class="chips"></div>
+        </div>
+        <div class="card">
+          <h3>Click tool</h3>
+          <div class="seg full" id="tools">
+            <button data-tool="inspect" class="on">Inspect</button><button data-tool="destroy">Destroy</button><button data-tool="zone">Move zone</button>
+          </div>
+          <div id="inspector" class="inspector"></div>
+        </div>
+        <details class="card" open>
+          <summary>Communications</summary>
+          <div id="ctl-comms" class="ctls"></div>
+        </details>
+        <details class="card">
+          <summary>Swarm</summary>
+          <div id="ctl-swarm" class="ctls"></div>
+        </details>
+        <details class="card">
+          <summary>Threat</summary>
+          <div id="ctl-threat" class="ctls"></div>
+        </details>
+        <details class="card">
+          <summary>Timeouts &amp; rates</summary>
+          <div id="ctl-timing" class="ctls"></div>
+        </details>
+        <details class="card">
+          <summary>View</summary>
+          <div class="ctls">
+            <label class="ctl ctl-toggle"><input type="checkbox" id="optLinks"><span class="ctl-head"><span>Radio links (brightness = traffic)</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="optTargets"><span class="ctl-head"><span>Target lines</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="optSensors"><span class="ctl-head"><span>Sensor footprints</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="optBelief"><span class="ctl-head"><span>Inspector: show belief vs truth</span></span></label>
+          </div>
+        </details>
+        <p class="muted small keys">Keys: <kbd>Space</kbd> pause · <kbd>W</kbd> wave · <kbd>K</kbd> kill coordinator · <kbd>R</kbd> reset</p>
+      </aside>
+    </section>
+
+    <section id="framework" class="doc">
+      <h2>The framework</h2>
+      <p class="lede">Every drone runs the same software. Nobody is told which layer to be in: each drone works it out from what it has, or hasn't, heard recently. A higher layer overrides a lower one whenever it's available, so losing the radio makes the swarm slower, never useless.</p>
+
+      <div class="layers">
+        <div class="layer" style="--c:var(--l3)">
+          <h4>Layer 3 · Coordinator plan</h4>
+          <p>When links are good, one node computes a globally optimal assignment (Hungarian algorithm) and broadcasts a <code>PLAN</code> five times a second.</p>
+          <p class="when">Active while a plan is younger than the plan timeout.</p>
+        </div>
+        <div class="layer" style="--c:var(--l2)">
+          <h4>Layer 2 · Peer claims</h4>
+          <p>No plan, but neighbors are audible. Each drone bids on its cheapest target with a <code>CLAIM</code>. Lowest cost wins; ties go to the lower ID.</p>
+          <p class="when">Active while any peer was heard within the contact timeout.</p>
+        </div>
+        <div class="layer" style="--c:var(--l1)">
+          <h4>Layer 1 · Solo</h4>
+          <p>Nobody is audible. The drone chases the most urgent enemy its own camera can see, and otherwise patrols its home slot.</p>
+          <p class="when">Always available. The last line of defense.</p>
+        </div>
+      </div>
+
+      <h3>Six rules</h3>
+      <ol class="rules">
+        <li><strong>Roles are emergent, not assigned.</strong> Identical code everywhere; the layer and the coordinator role follow from what each node hears.</li>
+        <li><strong>The coordinator is the lowest ID heard recently.</strong> No voting rounds. The ground station is ID 0, so it wins whenever it's reachable. If it goes silent past the leader timeout, the next lowest ID takes over automatically. When a lower ID reappears, the stand-in steps down.</li>
+        <li><strong>Share observations, not conclusions.</strong> <code>OBS</code> carries what a drone's own camera sees, with a timestamp, so everyone can build the same picture.</li>
+        <li><strong>Deterministic tie-breaks.</strong> Everyone applies the same rule to the same claims, so agreement needs no extra round of messages.</li>
+        <li><strong>Act first, reconcile later.</strong> A drone announces and moves on a new target immediately. Two drones briefly chasing one target costs less than everyone hesitating.</li>
+        <li><strong>Fast loops stay local.</strong> Steering runs on board. The radio only carries decisions, never stick commands.</li>
+      </ol>
+
+      <h3>Messages</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Type</th><th>Sent by</th><th>Meaning</th><th>Size</th><th>Relayed</th></tr></thead>
+          <tbody>
+            <tr><td><code>STATE</code></td><td>everyone, 5 Hz</td><td>My position, velocity, target, layer. Doubles as a heartbeat.</td><td>17 B</td><td>up to TTL</td></tr>
+            <tr><td><code>OBS</code></td><td>anyone seeing enemies, 5 Hz</td><td>What my own sensor sees right now.</td><td>10 + 7 per enemy</td><td>up to TTL</td></tr>
+            <tr><td><code>CLAIM</code></td><td>drones with a target, 5 Hz + on change</td><td>"I'm taking target T at cost C."</td><td>12 B</td><td>max 2 hops</td></tr>
+            <tr><td><code>RELEASE</code></td><td>the drone that intercepts</td><td>"Target T is done, forget it."</td><td>11 B</td><td>up to TTL</td></tr>
+            <tr><td><code>PLAN</code></td><td>coordinator, 5 Hz</td><td>Assignment for every known drone, plus position cues for assigned targets.</td><td>10 + 2/drone + 7/target</td><td>up to TTL</td></tr>
+            <tr><td><code>ELECT</code></td><td>a node that just became coordinator</td><td>"I'm coordinating now."</td><td>9 B</td><td>up to TTL</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">Every message carries origin, sequence number, timestamp and TTL (9-byte header). Receivers drop duplicates and ignore anything older than what they already have.</p>
+
+      <h3>What v0.1 assumes</h3>
+      <ul class="limits">
+        <li><strong>Perfect identity.</strong> Every node agrees on enemy IDs. Real systems must solve data association; this is the next milestone.</li>
+        <li><strong>Hand-written policy as a stand-in.</strong> The cost function and assignment in <code>js/policy.js</code> stand in for the trained model. The comms layer only calls three functions, so a learned policy can replace them directly.</li>
+        <li><strong>Flooding relays.</strong> Simple and robust, but bandwidth grows quickly with swarm size. Smarter routing is on the roadmap.</li>
+        <li><strong>Flat 2D world, simple dynamics, synchronized clocks, symmetric links.</strong></li>
+        <li><strong>Interception is a tag</strong>: getting within 12 m of an enemy.</li>
+      </ul>
+    </section>
+
+    <section id="experiments" class="doc">
+      <h2>Experiments to try</h2>
+      <div class="exps">
+        <div class="exp">
+          <h4>1 · How long is the coordination gap?</h4>
+          <p>Run <em>Clear skies</em> and press <strong>Kill coordinator</strong>. Drones turn amber (Layer 2) after about 0.6 s, then D1 takes over at about 1 s and they turn blue again. Try changing the timeouts and watch the gap change.</p>
+        </div>
+        <div class="exp">
+          <h4>2 · Split brain</h4>
+          <p>Lower <em>Drone radio range</em> to about 130 m and <em>Ground station radio</em> to about 200 m. As drones chase outward, the network splits and a second coordinator appears (e.g., GS + D2). When the groups meet again, the higher ID steps down.</p>
+        </div>
+        <div class="exp">
+          <h4>3 · What does coordination buy?</h4>
+          <p>Compare <em>Clear skies</em> with <em>Total blackout</em> over a few waves. Watch the average response time and the breaches. In headless runs: about 0.3 s versus 1.4 s response, and about 0% versus 7% breaches.</p>
+        </div>
+        <div class="exp">
+          <h4>4 · Relay hops versus bandwidth</h4>
+          <p>Move <em>Relay hops</em> between 1 and 5. More hops reach drones far from the coordinator, but messages per second climb steeply. Where is the sweet spot?</p>
+        </div>
+        <div class="exp">
+          <h4>5 · Fighting through interference</h4>
+          <p>Pick the <em>Move zone</em> tool and drag the zone over the incoming wave. Drones that chase into it lose the plan and fall back, then rejoin as they leave.</p>
+        </div>
+        <div class="exp">
+          <h4>6 · One drone per target, or two?</h4>
+          <p>Change <em>Max drones per target</em>. Doubling up wastes drones but beats evasive enemies. This is the trade-off a trained policy should learn.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap" class="doc">
+      <h2>Roadmap</h2>
+      <ol class="roadmap">
+        <li><b>v0.2</b> Track identity: drones name tracks themselves and merge duplicates (data association).</li>
+        <li><b>v0.3</b> Policy plug-in: load a trained model (e.g., ONNX or TensorFlow.js) in place of the hand-written policy.</li>
+        <li><b>v0.4</b> Smarter relaying: gossip and a per-drone bandwidth budget instead of flooding.</li>
+        <li><b>v0.5</b> Dataset export: log every message and decision as JSON for ML training.</li>
+        <li><b>v0.6</b> Learned communication: agents learn <em>what</em> to send, compared against this hand-designed protocol.</li>
+        <li><b>v0.7</b> 3D world and realistic flight dynamics.</li>
+      </ol>
+      <h3>Changelog</h3>
+      <ul class="changelog">
+        <li><b>v0.1.0</b> <time>2026-10-12</time> First release: three-layer fallback, implicit lowest-ID election with step-down, peer claims, TTL flooding, interference zone, five scenarios, and an inspector showing each node's private picture.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Swarm Comms Lab is an educational simulation of defensive swarm coordination. Interception is modeled as a tag.</p>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
