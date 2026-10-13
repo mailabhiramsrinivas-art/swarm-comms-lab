@@ -156,10 +156,11 @@ function build(ep) {
     world.add(mesh);
     return mesh;
   });
-  const coreGeo = new THREE.SphereGeometry(0.1 * r * k, 24, 16);
+  const coreGeo = new THREE.OctahedronGeometry(0.21 * r * k);   // see-through diamond: visible even on top of an O player
   const shellGeo = new THREE.SphereGeometry(r, 48, 32);
   objs.D = Array.from({ length: meta.n }, () => {
-    const core = new THREE.Mesh(coreGeo, new THREE.MeshStandardMaterial({ color: COL.d, emissive: COL.d, emissiveIntensity: 0.35 }));
+    const core = new THREE.Mesh(coreGeo, new THREE.MeshStandardMaterial({ color: COL.d, emissive: COL.d, emissiveIntensity: 0.35, transparent: true, opacity: 0.7, depthWrite: false, flatShading: true }));
+    core.renderOrder = 3;
     // many overlapping spheres would turn into a solid blob: fade them as the team grows
     const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({
       color: COL.d, transparent: true, opacity: Math.min(0.07, 0.4 / meta.n), depthWrite: false, roughness: 1, side: THREE.DoubleSide }));
