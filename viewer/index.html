@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simplex Game Viewer</title>
-  <meta name="description" content="Watch recorded games of the Simplex Game in 3D: D players clearing an O formation within five ticks.">
+  <meta name="description" content="Watch recorded games of the Simplex Game in 3D: D players racing to clear an O formation before the deadline.">
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="viewer.css">
   <script type="importmap">
@@ -95,7 +95,7 @@
 
     <section id="how" class="doc">
       <h2>How to read it</h2>
-      <p class="lede">D must eliminate every O player within 5 ticks. In each tick everyone moves, the formation is read, and each D player may hit one exposed O player inside its sphere.</p>
+      <p class="lede">D must eliminate every O player within 2 ticks. In each tick everyone moves, the formation is read, and each D player may hit one exposed O player inside its sphere. Shielded players only become hittable once the players around them are gone, so a formation is peeled from the outside in.</p>
       <div class="legend3d">
         <div><i class="dot" style="--c:var(--l1)"></i><b>Exposed O player.</b> Can be hit.</div>
         <div><i class="dot" style="--c:var(--good)"></i><b>Shielded O player.</b> Inside the formation with every link around it supported, so it cannot be hit.</div>

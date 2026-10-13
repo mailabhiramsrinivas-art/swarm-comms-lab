@@ -1,7 +1,8 @@
 [
-  {"file": "still-m12.json", "title": "O standing still", "blurb": "The sanity check: O does not move. 4 D players clear all 12 O players in 4 ticks."},
-  {"file": "moving-m12.json", "title": "Moving O, 12 players", "blurb": "O flees the nearest D player while keeping its formation together. 4 D players win on the last tick."},
-  {"file": "moving-m20.json", "title": "Moving O, 20 players", "blurb": "The largest formation size. 7 D players clear all 20 O players in 4 ticks."},
-  {"file": "nerve-nearest.json", "title": "Without the nerve", "blurb": "Each D player hits its nearest O player with no coordination. Two D players hit the same O player, the second hit is wasted, and one O player survives."},
-  {"file": "nerve-matched.json", "title": "With the nerve", "blurb": "Same formation, same 7 D players. Targets are matched across the nerve, so no hit is wasted and D wins in 4 ticks."}
+  {"file": "still-m12.json", "title": "O standing still", "blurb": "The sanity check: O does not move. 2 inner players start shielded. 6 D players clear the outer 6 in tick 1, which exposes the rest, and finish in tick 2."},
+  {"file": "moving-m12.json", "title": "Moving O, 12 players", "blurb": "O flees the nearest D player while holding its formation. Tick 1 strips the outer players and exposes the 2 shielded ones; 6 D players win in 2 ticks."},
+  {"file": "moving-m20.json", "title": "Moving O, 20 players", "blurb": "The largest formation size, with 5 players shielded at the start. 11 D players take the outer 10 in tick 1 and the last 10 in tick 2."},
+  {"file": "nerve-nearest.json", "title": "Without the nerve", "blurb": "Each D player hits its nearest O player with no coordination. 3 hits land on players someone else already took, and one O player survives."},
+  {"file": "nerve-matched.json", "title": "With the nerve", "blurb": "Same formation, same 7 D players. Targets are matched across the nerve, so no hit is wasted and D wins in 2 ticks."},
+  {"file": "cannot-win.json", "title": "A formation D cannot win", "blurb": "O stands still in 3 layers. Even with 20 D players, one per O player, peeling needs 3 rounds and there are only 2 ticks: 2 O players survive."}
 ]

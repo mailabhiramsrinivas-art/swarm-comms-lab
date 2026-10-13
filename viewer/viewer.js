@@ -145,18 +145,24 @@ function build(ep) {
   scene.add(world);
   const meta = prepare(ep);
   const r = ep.constants.r;
-  const oGeo = new THREE.SphereGeometry(0.13 * r, 28, 18);
+  // tight formations get smaller markers and labels so neighbours don't merge
+  const O0 = ep.frames[0].O;
+  const nn = O0.map((p, a) => Math.min(...O0.map((q, b) => (a === b ? Infinity : Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2])))));
+  const k = Math.min(1, Math.max(0.45, nn.reduce((x, y) => x + y, 0) / nn.length / 0.9));
+  state.k = k;
+  const oGeo = new THREE.SphereGeometry(0.13 * r * k, 28, 18);
   objs.O = Array.from({ length: meta.m }, () => {
     const mesh = new THREE.Mesh(oGeo, new THREE.MeshStandardMaterial({ color: COL.exposed, roughness: 0.45, metalness: 0.1, transparent: true }));
     world.add(mesh);
     return mesh;
   });
-  const coreGeo = new THREE.SphereGeometry(0.1 * r, 24, 16);
+  const coreGeo = new THREE.SphereGeometry(0.1 * r * k, 24, 16);
   const shellGeo = new THREE.SphereGeometry(r, 48, 32);
   objs.D = Array.from({ length: meta.n }, () => {
     const core = new THREE.Mesh(coreGeo, new THREE.MeshStandardMaterial({ color: COL.d, emissive: COL.d, emissiveIntensity: 0.35 }));
+    // many overlapping spheres would turn into a solid blob: fade them as the team grows
     const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({
-      color: COL.d, transparent: true, opacity: 0.07, depthWrite: false, roughness: 1, side: THREE.DoubleSide }));
+      color: COL.d, transparent: true, opacity: Math.min(0.07, 0.4 / meta.n), depthWrite: false, roughness: 1, side: THREE.DoubleSide }));
     shell.renderOrder = 2;
     world.add(core, shell);
     return { core, shell };
@@ -172,11 +178,12 @@ function build(ep) {
   for (const [k, c] of Object.entries(COL.hit)) objs.hits[k] = tubePool(c, 1);
   objs.tags = Array.from({ length: meta.n }, () => {
     const tag = label('', '#fff');
-    tag.scale.set(1.6, 0.4, 1);
+    tag.scale.set(1.6 * k, 0.4 * k, 1);
     return tag;
   });
-  objs.oLabels = Array.from({ length: meta.m }, (_, k) => label(`O${k}`, '#ffb3b3'));
-  objs.dLabels = Array.from({ length: meta.n }, (_, k) => label(`D${k}`, '#9fcbff'));
+  objs.oLabels = Array.from({ length: meta.m }, (_, i) => label(`O${i}`, '#ffb3b3'));
+  objs.dLabels = Array.from({ length: meta.n }, (_, i) => label(`D${i}`, '#9fcbff'));
+  for (const l of [...objs.oLabels, ...objs.dLabels]) l.scale.multiplyScalar(k);
 
   // fit the camera around every position the game visits
   const pts = [];
@@ -240,19 +247,19 @@ function draw() {
       mesh.material.opacity = 1;
       mesh.scale.setScalar(1);
       lab.visible = $('#showLabels').checked;
-      lab.position.copy(p).add(new THREE.Vector3(0, 0.27, 0));
+      lab.position.copy(p).add(new THREE.Vector3(0, 0.27 * state.k, 0));
     }
   });
   Dpos.forEach((p, k) => {
     objs.D[k].core.position.copy(p);
     objs.D[k].shell.position.copy(p);
-    objs.dLabels[k].position.copy(p).add(new THREE.Vector3(0, 0.25, 0));
+    objs.dLabels[k].position.copy(p).add(new THREE.Vector3(0, 0.25 * state.k, 0));
   });
 
   const L = meta.links[i];
   setSegments(objs.linkS, L.filter((e) => e.supported).map((e) => [Opos[e.a], Opos[e.b]]));
   setSegments(objs.linkU, L.filter((e) => !e.supported).map((e) => [Opos[e.a], Opos[e.b]]));
-  const tubeR = 0.022 * ep.constants.r;
+  const tubeR = 0.022 * ep.constants.r * state.k;
   objs.nerve.set(A.nerve.edges.map(([a, b]) => [Dpos[a], Dpos[b]]), tubeR);
   const tri = new Float32Array(A.nerve.triangles.length * 9);
   A.nerve.triangles.forEach(([a, b, c], k) => tri.set([...Dpos[a].toArray(), ...Dpos[b].toArray(), ...Dpos[c].toArray()], k * 9));
@@ -273,7 +280,7 @@ function draw() {
       tag.material.needsUpdate = true;
       tag.userData.text = h.result;
     }
-    tag.position.copy(Dpos[h.d]).lerp(V(A.O[h.o]), 0.5).add(new THREE.Vector3(0, 0.22, 0));
+    tag.position.copy(Dpos[h.d]).lerp(V(A.O[h.o]), 0.5).add(new THREE.Vector3(0, 0.22 * state.k, 0));
   });
   applyToggles();
   updatePanels(i, t);
