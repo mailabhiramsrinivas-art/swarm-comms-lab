@@ -12,6 +12,8 @@ The coordinator is simply the lowest ID a node has heard from recently. The grou
 
 **Live page:** https://mailabhiramsrinivas-art.github.io/swarm-comms-lab/
 
+**Simplex Game viewer:** https://mailabhiramsrinivas-art.github.io/swarm-comms-lab/viewer/ plays back recorded games in 3D (`viewer/`; recorded games in `viewer/episodes/`). It reads episode logs in the `simplex-episode/1` format, and you can open your own log file. Files opened that way stay in your browser.
+
 ## Run locally
 
 ES modules need a local server (opening `index.html` directly won't work):

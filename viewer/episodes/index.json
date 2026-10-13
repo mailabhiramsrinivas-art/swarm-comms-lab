@@ -1,0 +1,7 @@
+[
+  {"file": "still-m12.json", "title": "O standing still", "blurb": "The sanity check: O does not move. 4 D players clear all 12 O players in 4 ticks."},
+  {"file": "moving-m12.json", "title": "Moving O, 12 players", "blurb": "O flees the nearest D player while keeping its formation together. 4 D players win on the last tick."},
+  {"file": "moving-m20.json", "title": "Moving O, 20 players", "blurb": "The largest formation size. 7 D players clear all 20 O players in 4 ticks."},
+  {"file": "nerve-nearest.json", "title": "Without the nerve", "blurb": "Each D player hits its nearest O player with no coordination. Two D players hit the same O player, the second hit is wasted, and one O player survives."},
+  {"file": "nerve-matched.json", "title": "With the nerve", "blurb": "Same formation, same 7 D players. Targets are matched across the nerve, so no hit is wasted and D wins in 4 ticks."}
+]

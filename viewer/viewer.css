@@ -1,0 +1,77 @@
+/* Viewer layout; colours, header, buttons and cards come from ../css/style.css */
+
+.vsim { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.vstage { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.canvas3d {
+  position: relative; width: 100%; aspect-ratio: 16 / 10; min-height: 320px;
+  border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, #0f1824 0%, var(--bg) 75%);
+}
+#three { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud {
+  position: absolute; left: 10px; top: 10px; padding: 6px 10px; border-radius: 8px;
+  background: rgba(7, 11, 16, 0.78); font: 12px/1.5 var(--mono); color: var(--text); pointer-events: none;
+}
+.hud b { color: var(--l3); font-weight: 600; }
+.banner {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%);
+  padding: 7px 14px; border-radius: 99px; font-weight: 650; font-size: 14px;
+  background: rgba(7, 11, 16, 0.85); border: 1px solid var(--line-2); pointer-events: none;
+}
+.banner.win { color: var(--good); border-color: rgba(61, 220, 151, 0.5); }
+.banner.lose { color: var(--l1); border-color: rgba(255, 107, 107, 0.5); }
+.hint { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); pointer-events: none; }
+
+.timeline { position: relative; padding: 0 2px; }
+#scrub { width: 100%; accent-color: var(--l3); }
+.ticks { position: relative; height: 18px; font: 11px var(--mono); color: var(--muted); }
+.ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ticks span.now { color: var(--text); font-weight: 600; }
+
+.readout { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.readout .tile b.good { color: var(--good); }
+.readout .tile b.bad { color: var(--l1); }
+.readout .tile b.warn { color: var(--l2); }
+
+.eplist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.ep {
+  text-align: left; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 8px;
+  padding: 8px 10px; color: var(--text); cursor: pointer; font: inherit;
+}
+.ep:hover { border-color: var(--muted); }
+.ep.on { border-color: var(--l3); box-shadow: inset 3px 0 0 var(--l3); }
+.ep strong { display: block; font-size: 13px; }
+.ep span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.file { display: block; text-align: center; position: relative; overflow: hidden; }
+.file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.hits { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 var(--mono); min-height: 20px; }
+.hits li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--line); padding: 2px 0; }
+.hits .eliminated { color: var(--text); }
+.hits .wasted { color: var(--l2); }
+.hits .blocked { color: var(--l1); }
+.hits .out_of_range, .hits .invalid { color: var(--muted); }
+.hits .none { color: var(--muted); font-family: var(--sans); border: 0; }
+
+.legend3d { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; margin: 18px 0 8px; }
+.legend3d div { display: flex; gap: 10px; align-items: baseline; color: var(--muted); }
+.legend3d b { color: var(--text); font-weight: 600; }
+.legend3d i { flex: 0 0 auto; display: inline-block; position: relative; top: 2px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; background: var(--c); }
+.dot.faded { background: #4a5664; opacity: 0.6; }
+.ball { width: 13px; height: 13px; border-radius: 50%; background: rgba(77, 163, 255, 0.18); border: 1px solid var(--l3); }
+.line { width: 22px; height: 0; border-top: 2px solid #8fa6bd; top: -3px !important; }
+.line.dashed { border-top-style: dashed; border-top-color: #5c6f82; }
+.line.nerve { border-top-color: var(--gs); }
+.line.hit { border-top-color: #ffffff; }
+
+@media (max-width: 1100px) {
+  .vsim { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .canvas3d { aspect-ratio: 4 / 5; }
+  .banner { top: auto; bottom: 12px; }
+  .legend3d { grid-template-columns: minmax(0, 1fr); }
+  .hint { display: none; }
+}

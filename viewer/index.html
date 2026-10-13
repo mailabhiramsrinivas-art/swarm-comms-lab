@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simplex Game Viewer</title>
+  <meta name="description" content="Watch recorded games of the Simplex Game in 3D: D players clearing an O formation within five ticks.">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="viewer.css">
+  <script type="importmap">
+    {"imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }}
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3 21 19H3Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="14" r="2.2" fill="currentColor"/></svg>
+      <span>Simplex Game Viewer</span>
+      <span class="ver">Part 1</span>
+    </div>
+    <nav>
+      <a href="../">Swarm Comms Lab</a>
+      <a href="#viewer">Viewer</a>
+      <a href="#how">How to read it</a>
+      <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="viewer" class="vsim">
+      <div class="vstage">
+        <div class="toolbar">
+          <button id="play" class="btn">Play</button>
+          <button id="prev" class="btn" title="Previous phase (←)">◀ Phase</button>
+          <button id="next" class="btn" title="Next phase (→)">Phase ▶</button>
+          <button id="restart" class="btn" title="Back to the start">Restart</button>
+          <div class="seg" id="speed" role="group" aria-label="Speed">
+            <button data-v="0.5">½×</button><button data-v="1" class="on">1×</button><button data-v="2">2×</button>
+          </div>
+        </div>
+
+        <div class="canvas3d" id="canvasWrap">
+          <canvas id="three" aria-label="3D view of the game"></canvas>
+          <div class="hud" id="hud"></div>
+          <div class="banner" id="banner" hidden></div>
+          <div class="hint">Drag to rotate · scroll or pinch to zoom · right-drag to pan</div>
+        </div>
+
+        <div class="timeline">
+          <input type="range" id="scrub" min="0" max="1" step="0.001" value="0" aria-label="Scrub through the game">
+          <div class="ticks" id="ticks"></div>
+        </div>
+
+        <div class="readout" id="readout"></div>
+      </div>
+
+      <aside class="panel">
+        <div class="card">
+          <h3>Recorded games</h3>
+          <div id="episodes" class="eplist"></div>
+          <label class="file btn">
+            <input type="file" id="fileInput" accept=".json,application/json">
+            Open an episode file…
+          </label>
+          <p class="muted small">Opened files stay in your browser and are not uploaded.</p>
+        </div>
+
+        <div class="card">
+          <h3>This tick</h3>
+          <ol id="hits" class="hits"></ol>
+        </div>
+
+        <details class="card" open>
+          <summary>Show</summary>
+          <div class="ctls">
+            <label class="ctl ctl-toggle"><input type="checkbox" id="showSpheres" checked><span class="ctl-head"><span>D spheres of influence</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="showLinks" checked><span class="ctl-head"><span>Triangulation links</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="showNerve" checked><span class="ctl-head"><span>Nerve</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="showAttacks" checked><span class="ctl-head"><span>Attacks</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="showLabels" checked><span class="ctl-head"><span>Player labels</span></span></label>
+            <label class="ctl ctl-toggle"><input type="checkbox" id="autoRotate"><span class="ctl-head"><span>Slowly rotate</span></span></label>
+          </div>
+        </details>
+
+        <div class="card">
+          <h3>Video for slides</h3>
+          <button id="record" class="btn">Record this game as video</button>
+          <p class="muted small" id="recordNote">Plays the game from the start and saves a video. Recent Chrome and Safari save MP4; other browsers save WebM.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section id="how" class="doc">
+      <h2>How to read it</h2>
+      <p class="lede">D must eliminate every O player within 5 ticks. In each tick everyone moves, the formation is read, and each D player may hit one exposed O player inside its sphere.</p>
+      <div class="legend3d">
+        <div><i class="dot" style="--c:var(--l1)"></i><b>Exposed O player.</b> Can be hit.</div>
+        <div><i class="dot" style="--c:var(--good)"></i><b>Shielded O player.</b> Inside the formation with every link around it supported, so it cannot be hit.</div>
+        <div><i class="dot faded"></i><b>Eliminated.</b> Fades out.</div>
+        <div><i class="ball"></i><b>D player.</b> Its translucent sphere has radius r: the range of its hit.</div>
+        <div><i class="line solid"></i><b>Supported link</b> (shorter than 2r) in the formation's triangulation.</div>
+        <div><i class="line dashed"></i><b>Unsupported link</b> (2r or longer).</div>
+        <div><i class="line nerve"></i><b>Nerve.</b> Two D players who could hit the same O player, so they must agree who takes it.</div>
+        <div><i class="line hit"></i><b>Hit.</b> White when it eliminates, amber when wasted (someone else hit that player), red when blocked (the target was shielded).</div>
+      </div>
+      <h3>The phases of a tick</h3>
+      <ol class="rules">
+        <li><strong>Move.</strong> Everyone moves at once. O flees the nearest D player while keeping its formation together.</li>
+        <li><strong>Attack.</strong> Each D player may hit one exposed O player within its sphere. All hits land at the same moment.</li>
+        <li><strong>Plan.</strong> The survivors are read again. This is the picture D plans the next tick from.</li>
+      </ol>
+      <p class="muted small">The readout shows the dimension of the formation's shape: 3 with four or more survivors, then a triangle (2), an edge (1) and a single point (0).</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Simplex Game viewer: recorded games from the game engine. Part of the Swarm Comms Lab project.</p>
+  </footer>
+
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>
