@@ -1,0 +1,11 @@
+{
+  "win_threshold": "Raising the target from 50% to 99% doubles the average team, from 3.6 to 7.5 players, and lifts wins from 35% to 95%. The trained 90% sits in between: 5.5 players and 75% wins on these formations.",
+  "support_length": "A longer support length shields more players at the start: someone is shielded in 15% of formations at length 2 and in 58% at length 6. D's wins barely move (75 to 85%), because it reads who is shielded and peels accordingly.",
+  "spacing": "Tight formations have more shielded players, yet D wins more often there (90% at spacing 0.5), since one D player can reach several O players. Past the training range wins fall quickly: 39% at spacing 2, where the team-size network asks for almost 9 players and they still have too much ground to cover.",
+  "r": "Reach matters more than anything else. With a reach of 0.6 D almost never wins (3%); with 1.5 it wins every game. The networks measure distances in units of reach, so they keep their habits, but they cannot hit what is out of range.",
+  "v_D": "Slow D players fall behind: 23% wins at speed 0.3 and 38% at 0.4. From 0.6 upward D wins 95% of games.",
+  "v_O": "A formation that stands still or moves slowly is easy (90 to 98% wins). When O is faster than D, 0.6 against 0.5, wins collapse to 10%.",
+  "deadline": "Every extra tick helps: 40% wins with 3 ticks, 90% with 8. The team-size network was trained for 5 ticks and keeps choosing the same teams, so with fewer ticks it takes too few players.",
+  "cohesion_length": "O regroups toward neighbours farther away than this distance. A short distance keeps the formation huddled and easy to catch (90% wins at 1); a long one lets it spread out, and wins drop to 50% at 4.",
+  "w": "O players that mostly regroup are easy (90 to 95% wins). The more they flee, the harder D's job: 55% at 0.7 and 38% when they only flee. The trained range was 0.3 to 0.7."
+}

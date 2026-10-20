@@ -14,6 +14,8 @@ The coordinator is simply the lowest ID a node has heard from recently. The grou
 
 **Simplex Game viewer:** https://mailabhiramsrinivas-art.github.io/swarm-comms-lab/viewer/ plays back recorded games in 3D (`viewer/`; recorded games in `viewer/episodes/`). It reads episode logs in the `simplex-episode/1` format, and you can open your own log file. Files opened that way stay in your browser.
 
+**Taking a formation apart:** https://mailabhiramsrinivas-art.github.io/swarm-comms-lab/simplex-game/ shows how the learned D reads a formation, chooses its team size and places its players, and lets you build a formation for it to counter (`simplex-game/`). The game engine and the trained networks run in the browser.
+
 ## Run locally
 
 ES modules need a local server (opening `index.html` directly won't work):

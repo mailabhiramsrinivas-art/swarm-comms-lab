@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taking a Formation Apart</title>
+<meta name="description" content="How a learned team reads a 3D formation, chooses how many players it needs, where to stand and whom to hit within five ticks. Interactive, with a formation builder.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 29 26H3z' fill='none' stroke='%23D9487A' stroke-width='3'/%3E%3Cpath d='M16 3 16 19 29 26M16 19 3 26' fill='none' stroke='%23CB7E16' stroke-width='2'/%3E%3C/svg%3E">
+<script type="importmap">
+{ "imports": { "three": "./assets/vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<a class="skip" href="#walkthrough">Skip to the walkthrough</a>
+
+<header class="topbar" id="top">
+  <a class="brand" href="#top" aria-label="Back to top">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4 28 25H4z"/><path d="M16 4 16 18 28 25M16 18 4 25"/></svg>
+    <span>Simplex game</span>
+  </a>
+  <nav aria-label="Sections">
+    <a href="#walkthrough">Walkthrough</a>
+    <a href="#size">Formation size</a>
+    <a href="#settings">Settings</a>
+    <a href="#learned">What it learned</a>
+    <a href="#builder">Build your own</a>
+    <a href="#limits">Limits</a>
+  </nav>
+</header>
+
+<main>
+  <!-- ======================================================== hero -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-stage stage-host" id="hero-stage" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <h1 id="hero-title">Taking a formation apart</h1>
+      <p class="lede">Fourteen players hold a 3D formation. A learned team reads its shape, decides it needs six players, picks where to stand and removes everyone in three ticks. This page shows how, step by step, and lets you build a formation for it to counter.</p>
+      <div class="actions">
+        <a class="btn primary" href="#walkthrough">Walk through one game</a>
+        <a class="btn" href="#builder">Build your own formation</a>
+      </div>
+    </div>
+    <div class="hero-legend legend" aria-hidden="true">
+      <span><i class="dot exposed"></i>exposed O</span>
+      <span><i class="dot shielded"></i>shielded O</span>
+      <span><i class="dot d"></i>D player</span>
+    </div>
+  </section>
+
+  <!-- ======================================================== rules -->
+  <section class="band rules" aria-labelledby="rules-title">
+    <div class="wrap two">
+      <div>
+        <h2 id="rules-title">The game in one paragraph</h2>
+        <p>O is a formation of 4 to 20 players in open 3D space. D is a team of attackers that chooses its own size. Both sides see everything. Each tick, every player moves a little: D up to half a unit, O up to 0.4, with O fleeing the nearest attacker while keeping the formation together. Then each D player may hit one O player within one unit of it. One hit removes a player, but only if that player is <em>exposed</em>. D wins if every O player is gone after five ticks, and the fewer D players it needs, the better.</p>
+      </div>
+      <div>
+        <h3>Who is shielded</h3>
+        <p>The formation is split into tetrahedra with as few pieces as possible. A player is shielded when it sits inside the formation and every tetrahedron it belongs to has all six edges shorter than 4 units. Players on the outer surface are always exposed. So D has to peel the formation from the outside in, and it has to read the triangulation correctly to know who can be hit right now.</p>
+        <figure class="mini-diagram" aria-label="Diagram: a shielded inner player and exposed outer players">
+          <svg viewBox="0 0 360 196" role="img">
+            <title>An inner player with only short edges is shielded; players on the outside are exposed; one long edge is drawn dashed</title>
+            <g class="dg-edges">
+              <path d="M40 140 L110 40 L185 138 Z M112 98 L40 140 M112 98 L110 40 M112 98 L185 138 M185 138 L262 150 L320 52"/>
+              <path class="dg-long" d="M185 138 L320 52"/>
+            </g>
+            <circle class="dg-shielded" cx="112" cy="98" r="8"/>
+            <circle class="dg-exposed" cx="40" cy="140" r="7"/><circle class="dg-exposed" cx="110" cy="40" r="7"/>
+            <circle class="dg-exposed" cx="185" cy="138" r="7"/><circle class="dg-exposed" cx="320" cy="52" r="7"/><circle class="dg-exposed" cx="262" cy="150" r="7"/>
+            <text x="188" y="80">long edge</text>
+            <text x="352" y="24" text-anchor="end">outer players: always exposed</text>
+            <path class="dg-lead" d="M112 106 V170"/>
+            <text x="20" y="186">inside, every edge around it short: shielded</text>
+          </svg>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== walkthrough -->
+  <section class="band walkthrough" id="walkthrough" aria-labelledby="walk-title">
+    <div class="wrap">
+      <h2 id="walk-title">One formation, start to finish</h2>
+      <p class="section-lede">Test formation 14-1 from the frozen test set: 14 players arranged on a jittered lattice, with 4 of them shielded at the start. Everything below is what the learned D computes, using only its four trained networks.</p>
+    </div>
+    <div class="wrap study" id="tour">
+      <ol class="steps" aria-label="Steps"></ol>
+      <div class="study-main">
+        <div class="stage-frame">
+          <div class="stage-host" id="tour-stage"></div>
+          <div class="stage-hud" aria-live="polite"></div>
+          <div class="stage-legend legend"></div>
+        </div>
+        <div class="player-bar"></div>
+      </div>
+      <div class="step-text" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ======================================================== size explorer -->
+  <section class="band size" id="size" aria-labelledby="size-title">
+    <div class="wrap">
+      <h2 id="size-title">From 4 players to 20</h2>
+      <p class="section-lede">Move the slider to see the learned D handle a test formation of each size. For every size the formation is the first one in the test set with a shielded player (or the first one, for sizes where nobody is shielded). Each was played with the referee at full strength.</p>
+      <div class="size-control">
+        <label for="m-slider">Number of O players: <output id="m-out">14</output></label>
+        <input type="range" id="m-slider" min="4" max="20" step="1" value="14">
+        <div class="ticks" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="wrap size-grid">
+      <div class="stage-col">
+        <div class="stage-frame">
+          <div class="stage-host" id="size-stage"></div>
+          <div class="stage-hud" aria-live="polite"></div>
+          <div class="stage-legend legend"></div>
+        </div>
+        <div class="player-bar size-bar"></div>
+      </div>
+      <div class="size-facts" aria-live="polite"></div>
+    </div>
+    <div class="wrap size-charts">
+      <figure class="chart" id="chart-by-m"></figure>
+      <figure class="chart" id="chart-extra"></figure>
+    </div>
+  </section>
+
+  <!-- ======================================================== settings -->
+  <section class="band settings" id="settings" aria-labelledby="settings-title">
+    <div class="wrap">
+      <h2 id="settings-title">What each setting does</h2>
+      <p class="section-lede">Every rule of the game is a number you can change. The learned D was trained with one value of each, so values far from it test how well its skills carry over. Each chart below plays the same 40 test formations (10 each of 6, 10, 14 and 18 players) with only that setting changed.</p>
+      <div class="param-tabs" role="tablist" aria-label="Settings"></div>
+    </div>
+    <div class="wrap param-panel" role="tabpanel"></div>
+  </section>
+
+  <!-- ======================================================== learned only -->
+  <section class="band learned" id="learned" aria-labelledby="learned-title">
+    <div class="wrap two">
+      <div>
+        <h2 id="learned-title">What it learned, and nothing else</h2>
+        <p>During training, a planner searched thousands of futures to find good moves, and the networks learned from it by imitation and then by trial and error. At play time the planner is gone. The learned D uses four networks and one matching step:</p>
+        <dl class="nets">
+          <dt>Triangulation agent</dt><dd>Starts from the Delaunay split and chooses flips one at a time until it stops, aiming for the fewest tetrahedra. Its result decides who D believes is exposed.</dd>
+          <dt>Team-size network</dt><dd>Estimates the chance of winning with 1, 2, 3 … players and takes the smallest number that reaches 90%.</dd>
+          <dt>Placement network</dt><dd>Scores candidate spots (players, midpoints, triangle and tetrahedron centres) and picks them one by one, preferring spots that cover players not yet covered.</dd>
+          <dt>Per-tick network</dt><dd>Moves every D player each tick and scores which reachable, exposed O player each one should hit. D players whose reach overlaps then share out the targets so no two hit the same player.</dd>
+        </dl>
+      </div>
+      <div class="scoreboard" id="scoreboard"></div>
+    </div>
+    <div class="wrap">
+      <h3 class="compare-title">Same formation, three teams</h3>
+      <p class="section-lede">Recorded on the project machine with the full referee: the learned D, the planner that taught it, and a simple k-means team, each with the same number of players.</p>
+      <div class="compare-controls"></div>
+    </div>
+    <div class="wrap compare-grid">
+      <div class="stage-frame">
+        <div class="stage-host" id="compare-stage"></div>
+        <div class="stage-hud" aria-live="polite"></div>
+        <div class="stage-legend legend"></div>
+      </div>
+      <div>
+        <div class="player-bar compare-bar"></div>
+        <div class="compare-facts" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== builder -->
+  <section class="band builder" id="builder" aria-labelledby="builder-title">
+    <div class="wrap">
+      <h2 id="builder-title">Build a formation and let D counter it</h2>
+      <p class="section-lede">Place your own O players, or start from a preset and edit it. When you run it, the learned D reads your formation, chooses how many players it needs, places them and plays the game right here in your browser.</p>
+    </div>
+    <div class="wrap builder-grid">
+      <div class="builder-tools" aria-label="Formation tools"></div>
+      <div class="builder-center">
+        <div class="stage-frame builder-frame">
+          <div class="stage-host" id="builder-stage"></div>
+          <div class="stage-hud" aria-live="polite"></div>
+          <div class="stage-legend legend"></div>
+          <div class="edit-hint"></div>
+        </div>
+        <div class="player-bar builder-bar"></div>
+        <div class="builder-steps"><ol class="steps compact" aria-label="Steps"></ol><div class="step-text" aria-live="polite"></div></div>
+      </div>
+      <div class="builder-settings" aria-label="Game settings"></div>
+    </div>
+  </section>
+
+  <!-- ======================================================== limits -->
+  <section class="band limits" id="limits" aria-labelledby="limits-title">
+    <div class="wrap two">
+      <div>
+        <h2 id="limits-title">Limits worth knowing</h2>
+        <ul class="plain">
+          <li><strong>It is not the planner.</strong> At the planner's own team size the learned D wins 70% of test games, against the planner's 100% (the team size is defined as the smallest one where the planner wins all five games).</li>
+          <li><strong>Big formations are harder.</strong> Wins at its own team size fall from about 85% for 4 to 6 players to about 63% for 20, because a big formation leaves no room for one missed hit.</li>
+          <li><strong>It sometimes takes too few players.</strong> For 20-player formations it chose fewer players than the planner needed a third of the time, and those games are mostly lost.</li>
+          <li><strong>A known input mismatch.</strong> When choosing targets, the per-tick network is told that nobody moved last tick, although it was trained with the real moves. The networks were fine-tuned with this in place, and a fix made no measurable difference on validation. The builder lets you switch the fix on.</li>
+          <li><strong>Settings outside training.</strong> The networks never saw other speeds, radii or deadlines. The settings section shows how far their skills carry.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>How this page was made</h3>
+        <p>The game rules, the referee and the four trained networks were rewritten in JavaScript, so everything runs in your browser and no server is involved. On 119 test formations the browser version made the same team-size choice, the same placement and the same move and hit in every tick as the original Python and PyTorch code.</p>
+        <p>The browser referee finds the fewest-tetrahedra triangulation by annealing. At full strength it matched the test referee's count on all 34 formations checked. Above 12 players a lighter setting is faster but sometimes settles one or two tetrahedra above the best.</p>
+        <p class="small">Weights: final models of the project (per-tick network from reinforcement learning at 20,400 games). Test-set numbers come from the project's final evaluation: 850 formations, five games each.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Simplex game: a semester-end project in geometry and machine learning. Three.js is used for the 3D views (MIT licence).</p>
+  </div>
+</footer>
+
+<script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
