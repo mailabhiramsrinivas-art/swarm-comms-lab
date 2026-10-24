@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swarm Comms Lab · A drone swarm that keeps defending when its radio fails</title>
+<meta name="description" content="Software that keeps a team of defensive drones working together, even when the radio is jammed or the leader is lost.">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+<script type="module" src="assets/demo.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" fill-opacity=".1"/><path d="M16 9 L9 21 L23 21 Z" fill="none" stroke="#9fc8ef" stroke-width="1.6"/><circle cx="16" cy="9" r="3.2" fill="#4da3ff"/><circle cx="9" cy="21" r="3.2" fill="#4da3ff"/><circle cx="23" cy="21" r="3.2" fill="#4da3ff"/></svg>Swarm Comms Lab <span class="poc">Proof of concept</span></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html" aria-current="page"><span class="step">1</span>Overview</a></li>
+        <li><a href="how-it-works.html"><span class="step">2</span>How it works</a></li>
+        <li><a href="live-demo.html"><span class="step">3</span>Live demo</a></li>
+        <li><a href="results.html"><span class="step">4</span>Results</a></li>
+        <li><a href="ai.html"><span class="step">5</span>The AI</a></li>
+        <li><a href="next.html"><span class="step">6</span>What's next</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class="notice"><div class="wrap"><b>Proof of concept.</b> Everything on this site runs in a computer simulation, including the live view below.</div></div>
+
+<main id="main">
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <div class="kicker">Overview <span class="chip"><span class="dot"></span>Live simulation</span></div>
+        <h1>A drone swarm that keeps defending when its radio fails</h1>
+        <p class="lead">Swarm Comms Lab is the software that lets a team of defensive drones work together. When the radio is good, they act as one team. When it is jammed or their leader is lost, they keep going: slower, but never stopped.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="live-demo.html">Try the live demo →</a>
+          <a class="btn btn-ghost" href="how-it-works.html">How it works</a>
+        </div>
+      </div>
+      <div class="hero-visual" data-demo>
+        <div class="radar-card">
+          <canvas aria-label="Live simulation: eight drones defend a site in the centre against incoming threats"></canvas>
+          <ul class="legend on-dark" style="padding:10px 4px 2px">
+            <li><span class="sw m3"></span>Following the plan</li>
+            <li><span class="sw m2"></span>Agreeing with neighbours</li>
+            <li><span class="sw m1"></span>On its own</li>
+            <li><span class="sw enemy"></span>Threat</li>
+          </ul>
+          <div class="radar-caption"><span class="live">Live</span><span>8 drones guard the site in the centre</span><button type="button" data-action="play">Pause</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>The problem: teamwork runs on radio</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></div>
+          <h3>Threats arrive together</h3>
+          <p>Several attackers come in at once. Each defending drone must know which one is its job, so two don't chase the same target while another slips through.</p>
+        </div>
+        <div class="card">
+          <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 11a7 7 0 0 1 14 0M8.5 11a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="11" r="1.2" fill="currentColor"/><path d="M12 12.5V20"/></svg></div>
+          <h3>Splitting the work needs radio</h3>
+          <p>To divide the targets, drones share what they see and who is taking what, over radio links between them.</p>
+        </div>
+        <div class="card">
+          <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 7 6.5 9.5a4 4 0 0 0 5.7 5.6M15 17l2.5-2.5a4 4 0 0 0-5.7-5.6M4 4l16 16"/></svg></div>
+          <h3>Radio is the weak point</h3>
+          <p>Links get jammed, fade with distance, or the station giving orders is destroyed. A swarm that freezes without its radio is no defence at all.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Our answer: three modes, picked automatically</h2>
+      <p class="intro">Every drone runs the same program. Many times a second it checks what it can still hear, then uses the best of three modes. Nobody has to switch it.</p>
+      <div class="ladder">
+        <div class="axis" aria-hidden="true"><span>Good radio</span><span>No radio</span></div>
+        <div class="mode m3"><span class="tag">Blue</span><h3>Follow the team plan</h3><p>A leader works out the best job for every drone and sends the plan five times a second.</p></div>
+        <div class="mode m2"><span class="tag">Amber</span><h3>Agree with neighbours</h3><p>If the plan stops arriving, drones that can still hear each other share out the threats. The best-placed drone takes each one.</p></div>
+        <div class="mode m1"><span class="tag">Red</span><h3>Act alone</h3><p>If a drone hears nobody, it goes after the most urgent threat its own camera can see.</p></div>
+      </div>
+      <p class="intro" style="margin-top:20px">If the leader is destroyed, another drone takes over by itself in about one second. <a href="live-demo.html">Try it in the live demo</a>.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>What the tests show</h2>
+      <p class="intro">We ran each situation 10 times for 2 simulated minutes, about 1,150 incoming threats per situation.</p>
+      <div class="stats">
+        <div class="stat"><div class="label">Good radio</div><div class="value">0 <small>of 1,158</small></div><div class="note">threats got through</div></div>
+        <div class="stat"><div class="label">Leader destroyed twice</div><div class="value">0 <small>of 1,146</small></div><div class="note">threats got through, with the leader lost at 6 s and again at 14 s in every run</div></div>
+        <div class="stat"><div class="label">No radio at all</div><div class="value">94%</div><div class="note">of threats still stopped (1,071 of 1,145)</div></div>
+        <div class="stat"><div class="label">Reaction time</div><div class="value">0.3 s <small>→ 1.5 s</small></div><div class="note">from first sighting to a drone on the job, with good radio and with none</div></div>
+      </div>
+      <p style="margin-top:16px"><a href="results.html">See all results and what they don't show yet →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Two parts of one system</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="kicker" style="margin-bottom:8px">Part 1 · Working in simulation</div>
+          <h3>Communication</h3>
+          <p>Keeps the team coordinated as the radio gets worse, and replaces a lost leader automatically. This is what the live demo shows.</p>
+          <p><a href="live-demo.html">Open the live demo →</a></p>
+        </div>
+        <div class="card">
+          <div class="kicker" style="margin-bottom:8px">Part 2 · Trained and tested on its own</div>
+          <h3>Decision AI</h3>
+          <p>Decides how many drones to send against an enemy formation and where to place them. Tested in a 3D game; not yet connected to the communication part.</p>
+          <p><a href="ai.html">Meet the AI →</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Take the tour</h2>
+      <ol class="tour">
+        <li><a href="how-it-works.html"><b>How it works</b><span>The three modes, and what happens when the leader is lost.</span></a></li>
+        <li><a href="live-demo.html"><b>Live demo</b><span>Jam the radio or destroy the leader yourself.</span></a></li>
+        <li><a href="results.html"><b>Results</b><span>What 50 test runs show, and what they don't.</span></a></li>
+        <li><a href="ai.html"><b>The AI</b><span>How the swarm learns to take a formation apart.</span></a></li>
+        <li><a href="next.html"><b>What's next</b><span>Progress so far and the next steps.</span></a></li>
+      </ol>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <nav class="pager" aria-label="Next page">
+      <a class="next primary" href="how-it-works.html"><span class="dir">Next</span><b>How it works →</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Swarm Comms Lab · Proof of concept, simulation only</span>
+    <span><a href="../index.html">Engineering simulator</a> · <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a></span>
+  </div>
+</footer>
+</body>
+</html>

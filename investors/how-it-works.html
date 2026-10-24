@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works · Swarm Comms Lab</title>
+<meta name="description" content="Every drone runs the same software and picks its own mode from what it can hear. If the leader is lost, another drone takes over in about a second.">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" fill-opacity=".1"/><path d="M16 9 L9 21 L23 21 Z" fill="none" stroke="#9fc8ef" stroke-width="1.6"/><circle cx="16" cy="9" r="3.2" fill="#4da3ff"/><circle cx="9" cy="21" r="3.2" fill="#4da3ff"/><circle cx="23" cy="21" r="3.2" fill="#4da3ff"/></svg>Swarm Comms Lab <span class="poc">Proof of concept</span></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html"><span class="step">1</span>Overview</a></li>
+        <li><a href="how-it-works.html" aria-current="page"><span class="step">2</span>How it works</a></li>
+        <li><a href="live-demo.html"><span class="step">3</span>Live demo</a></li>
+        <li><a href="results.html"><span class="step">4</span>Results</a></li>
+        <li><a href="ai.html"><span class="step">5</span>The AI</a></li>
+        <li><a href="next.html"><span class="step">6</span>What's next</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">How it works</div>
+      <h1>How it works</h1>
+      <p class="lead">Every drone runs identical software. Each one decides for itself how to behave, based only on what it can hear right now. There is no single point that, once lost, stops the swarm.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Each drone asks itself two questions</h2>
+      <p class="intro">Many times a second, every drone checks what it can hear and picks its mode. As soon as the radio allows, it moves back up to a better mode.</p>
+      <div class="flow" role="list">
+        <div class="flow-row" role="listitem">
+          <div class="flow-q">Is the leader's plan still arriving?</div>
+          <div class="flow-yes"><span>Yes</span></div>
+          <div class="flow-a m3"><b>Follow the team plan</b><span>Do the job the leader assigned. A fresh plan arrives five times a second.</span></div>
+        </div>
+        <div class="flow-no" aria-hidden="true">No</div>
+        <div class="flow-row" role="listitem">
+          <div class="flow-q">Can it hear any other drone?</div>
+          <div class="flow-yes"><span>Yes</span></div>
+          <div class="flow-a m2"><b>Agree with neighbours</b><span>Each drone bids for a threat. The best-placed drone takes it; the others pick another one.</span></div>
+        </div>
+        <div class="flow-no" aria-hidden="true">No</div>
+        <div class="flow-row" role="listitem">
+          <div class="flow-a m1 flow-last"><b>Act alone</b><span>Chase the most urgent threat its own camera can see, or patrol its spot until one appears.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>When the leader is lost, a drone takes over in about a second</h2>
+      <p class="intro">The ground station leads whenever drones can hear it. If it goes silent, the swarm replaces it on its own, without a vote.</p>
+      <div class="card timeline">
+        <div class="tl-marks" aria-hidden="true">
+          <div class="tl-mark" style="left:0%;transform:none;text-align:left;width:auto"><div class="t">0 s</div><div class="pin" style="margin-left:0"></div></div>
+          <div class="tl-mark" style="left:36%"><div class="t">≈ 0.5 s</div><div class="pin"></div></div>
+          <div class="tl-mark" style="left:75%"><div class="t">≈ 1 s</div><div class="pin"></div></div>
+        </div>
+        <div class="tl-track" role="img" aria-label="Timeline: leader destroyed at 0 seconds, drones switch to agreeing with neighbours after about half a second, a drone takes over as leader after about one second">
+          <div class="seg" style="width:36%;background:#a9cdf3"></div>
+          <div class="seg" style="width:39%;background:var(--m2)"></div>
+          <div class="seg" style="width:25%;background:var(--m3)"></div>
+        </div>
+        <div class="tl-labels">
+          <div><b>Leader destroyed</b>Drones keep doing the last jobs they were given.</div>
+          <div><b>No fresh plan</b>Drones switch to agreeing with neighbours. The defence never pauses.</div>
+          <div><b>A drone takes over</b>The lowest-numbered drone still in contact becomes the leader, and plans resume. If the old leader comes back, it takes over again.</div>
+        </div>
+      </div>
+      <p class="small muted" style="margin-top:10px">Measured in the simulator over 5 runs: the first drones switch after about 0.5 s, a new leader is in place after about 1.0 s, and every drone follows it by 1.1 s.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Five design choices that keep it robust</h2>
+      <div class="grid-3">
+        <div class="card"><h3>No fixed roles</h3><p>Any drone can lead. The leader is simply the lowest-numbered one in contact, with the ground station always first in line.</p></div>
+        <div class="card"><h3>No voting</h3><p>Every drone applies the same rule to the same information, so they agree without sending extra messages.</p></div>
+        <div class="card"><h3>Share what you see</h3><p>Drones pass on raw sightings, not opinions, so every drone builds the same picture of the sky.</p></div>
+        <div class="card"><h3>Act first, fix later</h3><p>A drone commits to a target straight away. Two drones briefly chasing one threat costs less than everyone hesitating.</p></div>
+        <div class="card"><h3>Flying stays on board</h3><p>Each drone steers itself. The radio carries only decisions, so a lost message costs time, never control of the drone.</p></div>
+        <div class="card" style="background:var(--brand);border-color:var(--brand);color:#fff"><h3>See it for yourself</h3><p style="color:#c9dbea">Destroy the leader or cut the radio in the live simulator and watch the modes change.</p><p><a href="live-demo.html" style="color:#fff;font-weight:650">Open the live demo →</a></p></div>
+      </div>
+
+      <details class="tech">
+        <summary><div>For technical readers<span>Algorithms, messages and timings</span></div></summary>
+        <div class="body">
+          <h4>Assignment</h4>
+          <p>The leader computes a globally optimal drone-to-threat assignment with the Hungarian algorithm and broadcasts it as a PLAN at 5 Hz. Without a plan, drones send CLAIMs with a cost; the lowest cost wins and ties go to the lower ID, so every drone resolves conflicts identically without another round of messages.</p>
+          <h4>Leader election</h4>
+          <p>The coordinator is the lowest ID heard recently. The ground station is ID 0. When it is silent past the leader timeout (1.0 s) the next lowest ID takes over; when a lower ID reappears, the stand-in steps down.</p>
+          <h4>Messages</h4>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Sent by</th><th>Meaning</th><th class="num">Size</th></tr></thead>
+              <tbody>
+                <tr><td>STATE</td><td>everyone, 5 Hz</td><td>My position, velocity, target and mode. Doubles as a heartbeat.</td><td class="num">17 B</td></tr>
+                <tr><td>OBS</td><td>anyone seeing threats, 5 Hz</td><td>What my own sensor sees right now.</td><td class="num">10 + 7 per threat</td></tr>
+                <tr><td>CLAIM</td><td>drones with a target</td><td>"I'm taking target T at cost C."</td><td class="num">12 B</td></tr>
+                <tr><td>RELEASE</td><td>the drone that intercepts</td><td>"Target T is done."</td><td class="num">11 B</td></tr>
+                <tr><td>PLAN</td><td>leader, 5 Hz</td><td>An assignment for every known drone.</td><td class="num">10 + 2/drone + 7/target</td></tr>
+                <tr><td>ELECT</td><td>a new leader</td><td>"I'm coordinating now."</td><td class="num">9 B</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top:12px">Every message carries origin, sequence number, timestamp and hop limit (a 9-byte header) and is relayed by flooding up to 3 hops (claims at most 2). Timeouts: plan 0.6 s, contact 0.6 s, leader 1.0 s. Every setting can be changed in the <a href="../index.html">engineering simulator</a>.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <nav class="pager" aria-label="Previous and next page">
+      <a class="prev" href="index.html"><span class="dir">← Previous</span><b>Overview</b></a>
+      <a class="next primary" href="live-demo.html"><span class="dir">Next</span><b>Live demo →</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Swarm Comms Lab · Proof of concept, simulation only</span>
+    <span><a href="../index.html">Engineering simulator</a> · <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a></span>
+  </div>
+</footer>
+</body>
+</html>
