@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The AI · Swarm Comms Lab</title>
+<meta name="description" content="A trained AI that reads an enemy formation, decides how many drones it needs and takes the formation apart from the outside in.">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" fill-opacity=".1"/><path d="M16 9 L9 21 L23 21 Z" fill="none" stroke="#9fc8ef" stroke-width="1.6"/><circle cx="16" cy="9" r="3.2" fill="#4da3ff"/><circle cx="9" cy="21" r="3.2" fill="#4da3ff"/><circle cx="23" cy="21" r="3.2" fill="#4da3ff"/></svg>Swarm Comms Lab <span class="poc">Proof of concept</span></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html"><span class="step">1</span>Overview</a></li>
+        <li><a href="how-it-works.html"><span class="step">2</span>How it works</a></li>
+        <li><a href="live-demo.html"><span class="step">3</span>Live demo</a></li>
+        <li><a href="results.html"><span class="step">4</span>Results</a></li>
+        <li><a href="ai.html" aria-current="page"><span class="step">5</span>The AI</a></li>
+        <li><a href="next.html"><span class="step">6</span>What's next</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <section class="hero" style="padding-top:48px">
+      <div>
+        <div class="kicker">The AI <span class="chip">Part 2 · Trained and tested on its own</span></div>
+        <h1>Teaching the swarm to take a formation apart</h1>
+        <p class="lead">The second part of the system decides how many drones to send against an enemy formation, and where to put them. We trained it on a 3D game that captures the heart of the problem.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="../simplex-game/#builder">Build a formation and watch it respond →</a>
+          <a class="btn btn-ghost" href="../viewer/">Watch games in 3D</a>
+        </div>
+      </div>
+      <figure class="shot">
+        <img src="assets/img/formation-game.jpg" width="1200" height="757" alt="3D view of a recorded game: twelve enemy drones in formation, linked by lines, with six blue diamond-shaped drones placed among them, each surrounded by a translucent sphere.">
+        <figcaption>A recorded game in the 3D viewer. Red enemies are on the outside and can be hit; the green ones are shielded inside. Our 6 drones are the blue diamonds, each shown with its reach.</figcaption>
+      </figure>
+    </section>
+  </div>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>The game in plain words</h2>
+      <div class="grid-3">
+        <div class="card"><h3>An enemy formation</h3><p>Between 4 and 20 enemy drones hold a shape in 3D space. They flee from our drones while trying to stay together.</p></div>
+        <div class="card"><h3>Only the outside can be hit</h3><p>Enemies on the outer surface are exposed. Enemies deep inside are shielded by the ones around them, so the formation has to be peeled from the outside in.</p></div>
+        <div class="card"><h3>Five rounds, fewest drones</h3><p>Our team has five rounds to remove every enemy. Using fewer drones scores better, so sending too many is a cost, not a safe choice.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>How the AI does it</h2>
+      <div class="fig-steps">
+        <div class="card">
+          <svg viewBox="0 0 240 150" role="img" aria-label="A formation of fourteen enemies: ten on the outside marked red, four inside marked green">
+            <g stroke="#c9cfd2" stroke-width="1" fill="none">
+              <polygon points="172,75 162,101 136,117 104,117 78,101 68,75 78,49 104,33 136,33 162,49"/>
+              <path d="M108,64 132,64 132,86 108,86Z M108,64 104,33 M108,64 78,49 M132,64 136,33 M132,64 162,49 M132,86 162,101 M132,86 136,117 M108,86 104,117 M108,86 78,101 M108,64 68,75 M132,86 172,75"/>
+            </g>
+            <g fill="#e5534b"><circle cx="172" cy="75" r="6"/><circle cx="162" cy="101" r="6"/><circle cx="136" cy="117" r="6"/><circle cx="104" cy="117" r="6"/><circle cx="78" cy="101" r="6"/><circle cx="68" cy="75" r="6"/><circle cx="78" cy="49" r="6"/><circle cx="104" cy="33" r="6"/><circle cx="136" cy="33" r="6"/><circle cx="162" cy="49" r="6"/></g>
+            <g fill="#1baf7a"><circle cx="108" cy="64" r="6"/><circle cx="132" cy="64" r="6"/><circle cx="108" cy="86" r="6"/><circle cx="132" cy="86" r="6"/></g>
+            <g font-size="10.5" fill="#46525a" font-family="system-ui, sans-serif"><circle cx="16" cy="137" r="4.5" fill="#e5534b"/><text x="25" y="141">can be hit</text><circle cx="96" cy="137" r="4.5" fill="#1baf7a"/><text x="105" y="141">shielded</text></g>
+          </svg>
+          <div class="n">Step 1</div>
+          <h3>Read the shape</h3>
+          <p>It works out which enemies are exposed on the outside and which are shielded inside. Getting this right decides who can be hit right now.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 240 150" role="img" aria-label="The same formation with six blue drones placed around it">
+            <g stroke="#c9cfd2" stroke-width="1" fill="none">
+              <polygon points="172,75 162,101 136,117 104,117 78,101 68,75 78,49 104,33 136,33 162,49"/>
+              <path d="M108,64 132,64 132,86 108,86Z"/>
+            </g>
+            <g fill="#e5534b"><circle cx="172" cy="75" r="6"/><circle cx="162" cy="101" r="6"/><circle cx="136" cy="117" r="6"/><circle cx="104" cy="117" r="6"/><circle cx="78" cy="101" r="6"/><circle cx="68" cy="75" r="6"/><circle cx="78" cy="49" r="6"/><circle cx="104" cy="33" r="6"/><circle cx="136" cy="33" r="6"/><circle cx="162" cy="49" r="6"/></g>
+            <g fill="#1baf7a"><circle cx="108" cy="64" r="6"/><circle cx="132" cy="64" r="6"/><circle cx="108" cy="86" r="6"/><circle cx="132" cy="86" r="6"/></g>
+            <g fill="#2a78d6" stroke="#fff" stroke-width="1.5"><path d="M196,67 204,75 196,83 188,75Z"/><path d="M160,119 168,127 160,135 152,127Z"/><path d="M80,119 88,127 80,135 72,127Z"/><path d="M44,67 52,75 44,83 36,75Z"/><path d="M80,15 88,23 80,31 72,23Z"/><path d="M160,15 168,23 160,31 152,23Z"/></g>
+            <text x="228" y="141" text-anchor="end" font-size="10.5" fill="#46525a" font-family="system-ui, sans-serif">6 drones chosen</text>
+          </svg>
+          <div class="n">Step 2</div>
+          <h3>Choose the team and place it</h3>
+          <p>It estimates its chance of winning with 1, 2, 3 or more drones and picks the smallest team with at least a 90% chance. Then it decides where each drone starts.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 240 150" role="img" aria-label="The outer enemies are gone, the four inner enemies are now red and can be hit, and the six blue drones have closed in">
+            <g stroke="#d9dddb" stroke-width="1" fill="none" stroke-dasharray="3 3"><circle cx="172" cy="75" r="6"/><circle cx="162" cy="101" r="6"/><circle cx="136" cy="117" r="6"/><circle cx="104" cy="117" r="6"/><circle cx="78" cy="101" r="6"/><circle cx="68" cy="75" r="6"/><circle cx="78" cy="49" r="6"/><circle cx="104" cy="33" r="6"/><circle cx="136" cy="33" r="6"/><circle cx="162" cy="49" r="6"/></g>
+            <path d="M108,64 132,64 132,86 108,86Z" stroke="#c9cfd2" stroke-width="1" fill="none"/>
+            <g fill="#e5534b"><circle cx="108" cy="64" r="6"/><circle cx="132" cy="64" r="6"/><circle cx="108" cy="86" r="6"/><circle cx="132" cy="86" r="6"/></g>
+            <g fill="#2a78d6" stroke="#fff" stroke-width="1.5"><path d="M156,67 164,75 156,83 148,75Z"/><path d="M138,96 146,104 138,112 130,104Z"/><path d="M102,96 110,104 102,112 94,104Z"/><path d="M84,67 92,75 84,83 76,75Z"/><path d="M102,38 110,46 102,54 94,46Z"/><path d="M138,38 146,46 138,54 130,46Z"/></g>
+            <text x="228" y="141" text-anchor="end" font-size="10.5" fill="#46525a" font-family="system-ui, sans-serif">outer layer gone</text>
+          </svg>
+          <div class="n">Step 3</div>
+          <h3>Peel from the outside in</h3>
+          <p>Each round it moves its drones and decides who hits whom, so no two drones waste a hit on the same enemy. As the outer layer falls, the inner enemies become exposed.</p>
+        </div>
+      </div>
+      <p class="intro" style="margin-top:20px"><b>A real example from the test set:</b> 14 enemies held a formation with 4 shielded inside. The AI chose 6 drones and cleared the whole formation in 3 rounds.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>How it learned</h2>
+      <ol class="steps three">
+        <li><b>Copy an expert</b>A slow planning program searched thousands of possible futures to find good moves. The AI learned by imitating it.</li>
+        <li><b>Practise</b>It then improved by trial and error, over 20,400 practice games.</li>
+        <li><b>Play on its own</b>In use, the planner is gone. Only the trained AI makes the decisions.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>How well it does</h2>
+      <p class="intro">Tested on 850 formations it had never seen, five games each.</p>
+      <div class="stats">
+        <div class="stat"><div class="label">Against its teacher</div><div class="value">70%</div><div class="note">of games won with the same number of drones the planner needed. The planner wins all of them.</div></div>
+        <div class="stat"><div class="label">Small vs. large formations</div><div class="value">85% <small>→ 63%</small></div><div class="note">of games won with its own choice of team size, from 4 to 6 enemies down to 20, where there is no room for a missed hit</div></div>
+        <div class="stat"><div class="label">Fresh test cases</div><div class="value">850</div><div class="note">formations never seen in training, from 4 to 20 enemies</div></div>
+        <div class="stat"><div class="label">Runs in a browser</div><div class="value">119 <small>of 119</small></div><div class="note">test formations where the browser version made exactly the same decisions as the original code</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="callouts">
+        <div class="callout good">
+          <h3>What this shows</h3>
+          <ul>
+            <li>A trained AI can read a formation's shape and size its response to it, instead of following fixed rules.</li>
+            <li>It coordinates its own drones so hits aren't wasted on the same target.</li>
+            <li>It is small enough to run in an ordinary web browser, with no server.</li>
+          </ul>
+        </div>
+        <div class="callout warn">
+          <h3>What it doesn't show yet</h3>
+          <ul>
+            <li><b>Not connected yet.</b> The AI and the communication system have been built and tested separately.</li>
+            <li><b>A simplified game.</b> Both sides see everything, and a hit is a simple rule.</li>
+            <li><b>Behind its teacher.</b> It wins 70% of games where the slow planner wins all of them.</li>
+            <li><b>Too few drones, sometimes.</b> For the largest formations it chose fewer drones than needed a third of the time.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <nav class="pager" aria-label="Previous and next page">
+      <a class="prev" href="results.html"><span class="dir">← Previous</span><b>Results</b></a>
+      <a class="next primary" href="next.html"><span class="dir">Next</span><b>What's next →</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Swarm Comms Lab · Proof of concept, simulation only</span>
+    <span><a href="../index.html">Engineering simulator</a> · <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a></span>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Results · Swarm Comms Lab</title>
+<meta name="description" content="Five situations, ten runs each. Losing the radio made the swarm slower, but it kept defending.">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" fill-opacity=".1"/><path d="M16 9 L9 21 L23 21 Z" fill="none" stroke="#9fc8ef" stroke-width="1.6"/><circle cx="16" cy="9" r="3.2" fill="#4da3ff"/><circle cx="9" cy="21" r="3.2" fill="#4da3ff"/><circle cx="23" cy="21" r="3.2" fill="#4da3ff"/></svg>Swarm Comms Lab <span class="poc">Proof of concept</span></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html"><span class="step">1</span>Overview</a></li>
+        <li><a href="how-it-works.html"><span class="step">2</span>How it works</a></li>
+        <li><a href="live-demo.html"><span class="step">3</span>Live demo</a></li>
+        <li><a href="results.html" aria-current="page"><span class="step">4</span>Results</a></li>
+        <li><a href="ai.html"><span class="step">5</span>The AI</a></li>
+        <li><a href="next.html"><span class="step">6</span>What's next</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">Results <span class="chip">Measured 24 October 2026</span></div>
+      <h1>What the tests show</h1>
+      <p class="lead">We put the swarm through five situations, from perfect radio to none at all. Losing the radio made the swarm slower, but it never stopped defending.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>How we tested</h2>
+      <ol class="steps">
+        <li><b>Five situations</b>Good radio, patchy radio, a jammed area, the leader destroyed twice, and no radio at all.</li>
+        <li><b>Ten runs each</b>Each run starts differently at random, so one lucky run can't skew the result.</li>
+        <li><b>Two minutes per run</b>A wave of 10 threats every 10 seconds: about 1,150 threats per situation.</li>
+        <li><b>Count what happened</b>Threats stopped, threats that reached the site, and how fast a drone took each one on.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="chart-card">
+        <h3>Without any radio, drones react about five times slower</h3>
+        <p class="sub">Average time from first sighting of a threat to a drone taking it on, in seconds. Shorter is better.</p>
+        <ul class="bars">
+          <li tabindex="0" data-tip="Good radio: 0.32 s average reaction. 0 of 1,158 threats got through."><div class="name">Good radio</div><div class="track"><div class="fill" style="width:16%"></div><span class="val">0.32 s</span></div></li>
+          <li tabindex="0" data-tip="Patchy radio (35% of messages lost): 0.53 s average reaction. 3 of 1,151 threats got through."><div class="name">Patchy radio<small>35% of messages lost</small></div><div class="track"><div class="fill" style="width:26.5%"></div><span class="val">0.53 s</span></div></li>
+          <li tabindex="0" data-tip="Jammed area (95% of messages lost inside it): 0.53 s average reaction. 2 of 1,194 threats got through."><div class="name">Jammed area<small>95% lost inside the zone</small></div><div class="track"><div class="fill" style="width:26.5%"></div><span class="val">0.53 s</span></div></li>
+          <li tabindex="0" data-tip="Leader destroyed at 6 s and again at 14 s: 0.43 s average reaction. 0 of 1,146 threats got through."><div class="name">Leader destroyed twice<small>at 6 s and 14 s</small></div><div class="track"><div class="fill" style="width:21.5%"></div><span class="val">0.43 s</span></div></li>
+          <li tabindex="0" data-tip="No radio at all: 1.53 s average reaction. 74 of 1,145 threats got through."><div class="name">No radio at all<small>every message lost</small></div><div class="track"><div class="fill" style="width:76.5%"></div><span class="val">1.53 s</span></div></li>
+        </ul>
+        <div class="axis-row" aria-hidden="true"><div></div><div class="axis-ticks"><span style="left:0">0</span><span style="left:25%">0.5</span><span style="left:50%">1.0</span><span style="left:75%">1.5</span><span style="left:100%;transform:translateX(-100%)">2.0 s</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Almost nothing got through until the radio was gone completely</h2>
+      <p class="intro">Threats that reached the protected site, out of all threats that were stopped or got through.</p>
+      <div class="stats five">
+        <div class="stat"><div class="label">Good radio</div><div class="value">0 <small>of 1,158</small></div><div class="note">got through</div></div>
+        <div class="stat"><div class="label">Patchy radio</div><div class="value">3 <small>of 1,151</small></div><div class="note">got through (0.3%)</div></div>
+        <div class="stat"><div class="label">Jammed area</div><div class="value">2 <small>of 1,194</small></div><div class="note">got through (0.2%)</div></div>
+        <div class="stat"><div class="label">Leader lost twice</div><div class="value">0 <small>of 1,146</small></div><div class="note">got through</div></div>
+        <div class="stat"><div class="label">No radio at all</div><div class="value">74 <small>of 1,145</small></div><div class="note">got through (6.5%); 94% still stopped</div></div>
+      </div>
+      <details class="more">
+        <summary>Show all the numbers as a table</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Situation</th><th>What changes</th><th class="num">Stopped</th><th class="num">Got through</th><th class="num">Average reaction</th><th class="num">Time in blue mode</th></tr></thead>
+            <tbody>
+              <tr><td>Good radio</td><td>2% of messages lost</td><td class="num">1,158</td><td class="num">0</td><td class="num">0.32 s</td><td class="num">100%</td></tr>
+              <tr><td>Patchy radio</td><td>35% lost, shorter range</td><td class="num">1,148</td><td class="num">3</td><td class="num">0.53 s</td><td class="num">96%</td></tr>
+              <tr><td>Jammed area</td><td>95% lost inside one zone</td><td class="num">1,192</td><td class="num">2</td><td class="num">0.53 s</td><td class="num">92%</td></tr>
+              <tr><td>Leader destroyed twice</td><td>ground station at 6 s, next leader at 14 s</td><td class="num">1,146</td><td class="num">0</td><td class="num">0.43 s</td><td class="num">99%</td></tr>
+              <tr><td>No radio at all</td><td>every message lost</td><td class="num">1,071</td><td class="num">74</td><td class="num">1.53 s</td><td class="num">0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:8px">Totals over 10 runs of 2 simulated minutes each. "Time in blue mode" is the share of drone-time spent following the team plan.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="callouts">
+        <div class="callout good">
+          <h3>What this shows</h3>
+          <ul>
+            <li><b>The fallback works.</b> With the leader destroyed twice in every run, not one threat got through.</li>
+            <li><b>Losing radio costs speed, not the defence.</b> With every message lost, 94% of threats were still stopped.</li>
+            <li><b>The swarm heals itself.</b> No person stepped in during any run: leaders were replaced and modes changed on their own.</li>
+          </ul>
+        </div>
+        <div class="callout warn">
+          <h3>What it doesn't show yet</h3>
+          <ul>
+            <li><b>Real hardware.</b> This is a simulation of a flat, 2D world with simplified flight.</li>
+            <li><b>Telling threats apart.</b> Drones are told which threat is which. Real sensors have to work that out.</li>
+            <li><b>Smart targeting.</b> Simple hand-written rules pick targets; the trained AI is not plugged in yet.</li>
+            <li><b>Real interception.</b> "Stopped" means a drone came within 12 metres of the threat.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="tech">
+        <summary><div>For technical readers<span>How to reproduce these numbers</span></div></summary>
+        <div class="body">
+          <p>The five situations are the simulator's built-in presets (Clear skies, Patchy links, Interference zone, Coordinator lost, Total blackout) with 8 drones and a ground station. Each was run with random seeds 1 to 10 for 120 simulated seconds at 60 steps per second. Reaction time is measured from the moment a threat is first seen to the moment a drone targets it; a breach is a threat reaching the protected site.</p>
+          <p>From the repository root, run <code>node investors/tools/bench.mjs</code> to repeat the measurement.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <nav class="pager" aria-label="Previous and next page">
+      <a class="prev" href="live-demo.html"><span class="dir">← Previous</span><b>Live demo</b></a>
+      <a class="next primary" href="ai.html"><span class="dir">Next</span><b>The AI →</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Swarm Comms Lab · Proof of concept, simulation only</span>
+    <span><a href="../index.html">Engineering simulator</a> · <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a></span>
+  </div>
+</footer>
+</body>
+</html>
