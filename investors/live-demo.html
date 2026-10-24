@@ -2,128 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live demo · Swarm Comms Lab</title>
-<meta name="description" content="The real simulator, running in your browser. Destroy the leader, jam the radio or cut it completely, and watch the swarm keep defending.">
-<link rel="stylesheet" href="assets/site.css">
-<script src="assets/site.js" defer></script>
-<script type="module" src="assets/demo.js"></script>
+<title>Moved to the Swarm Comms Lab presentation</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="../presentation/#live">
+<meta http-equiv="refresh" content="0; url=../presentation/#live">
+<script>location.replace('../presentation/#live');</script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="site-header">
-  <div class="wrap">
-    <a class="brand" href="index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" fill-opacity=".1"/><path d="M16 9 L9 21 L23 21 Z" fill="none" stroke="#9fc8ef" stroke-width="1.6"/><circle cx="16" cy="9" r="3.2" fill="#4da3ff"/><circle cx="9" cy="21" r="3.2" fill="#4da3ff"/><circle cx="23" cy="21" r="3.2" fill="#4da3ff"/></svg>Swarm Comms Lab <span class="poc">Proof of concept</span></a>
-    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
-    <nav class="site-nav" id="site-nav" aria-label="Main">
-      <ul>
-        <li><a href="index.html"><span class="step">1</span>Overview</a></li>
-        <li><a href="how-it-works.html"><span class="step">2</span>How it works</a></li>
-        <li><a href="live-demo.html" aria-current="page"><span class="step">3</span>Live demo</a></li>
-        <li><a href="results.html"><span class="step">4</span>Results</a></li>
-        <li><a href="ai.html"><span class="step">5</span>The AI</a></li>
-        <li><a href="next.html"><span class="step">6</span>What's next</a></li>
-      </ul>
-    </nav>
-  </div>
-</header>
-
-<main id="main">
-  <div class="wrap">
-    <div class="page-head">
-      <div class="kicker">Live demo <span class="chip"><span class="dot"></span>Running in your browser</span></div>
-      <h1>See it live</h1>
-      <p class="lead">This is the real simulator, running in your browser right now. Eight drones guard the site in the centre while waves of threats fly in from the edges. Use the buttons to make things go wrong.</p>
-    </div>
-
-    <section class="demo" data-demo style="margin-top:24px">
-      <div class="radar-card">
-        <canvas aria-label="Live simulation of the drone swarm. Drones circle the site in the centre; threats fly in from the edges."></canvas>
-        <ul class="legend on-dark">
-          <li><span class="sw m3"></span>Following the plan</li>
-          <li><span class="sw m2"></span>Agreeing with neighbours</li>
-          <li><span class="sw m1"></span>On its own</li>
-          <li><span class="sw gs"></span>Ground station (GS)</li>
-          <li><span class="sw enemy"></span>Threat</li>
-        </ul>
-        <div class="radar-caption"><span class="live">Live</span><span>D1 to D8 are our drones · the cross is the site</span><button type="button" data-action="play">Pause</button></div>
-      </div>
-
-      <div>
-        <div class="panel">
-          <h2>Make something go wrong</h2>
-          <div class="controls">
-            <button class="ctl" type="button" data-action="kill">
-              <span class="ic" style="color:var(--m1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4l-5.3 3 1.2-6-4.5-4.1 6-.7z"/></svg></span>
-              <b>Destroy the leader</b><span>Drones flash amber, then turn blue again as another drone takes over.</span>
-            </button>
-            <button class="ctl" type="button" data-action="jam" aria-pressed="false">
-              <span class="ic" style="color:var(--m2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l3-5 3 10 3-10 3 10 3-10 3 5"/></svg></span>
-              <b>Jam the radio in one area</b><span>Threats fly in through the orange zone. Drones inside it lose the plan.</span>
-            </button>
-            <button class="ctl" type="button" data-action="cut" aria-pressed="false">
-              <span class="ic" style="color:var(--m1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/><path d="M3 3l18 18"/></svg></span>
-              <b>Cut all radio</b><span>Every drone turns red and works alone. Threats are still stopped, just more slowly.</span>
-            </button>
-            <button class="ctl" type="button" data-action="wave">
-              <span class="ic" style="color:var(--brand-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h9M3 12h13M3 18h9M17 8l4 4-4 4"/></svg></span>
-              <b>Send an extra wave</b><span>Ten more threats, on top of the automatic wave every 10 seconds.</span>
-            </button>
-            <div class="ctl-row">
-              <button type="button" data-action="respawn">Replace lost drones</button>
-              <button type="button" data-action="reset">Restart</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <h2>Right now</h2>
-          <dl class="readout">
-            <div><dt>Threats stopped</dt><dd data-stat="stopped">0</dd></div>
-            <div><dt>Got through</dt><dd data-stat="through">0</dd></div>
-            <div><dt>Average reaction</dt><dd data-stat="reaction">–</dd></div>
-            <div><dt>Drones by mode</dt><dd style="font-size:1rem">
-              <div class="modes-bar" data-modes aria-hidden="true"><i style="background:var(--m3)"></i><i style="background:var(--m2)"></i><i style="background:var(--m1)"></i></div>
-              <div class="modes-count"><span><span class="sw m3"></span><span data-stat="m3">0</span></span><span><span class="sw m2"></span><span data-stat="m2">0</span></span><span><span class="sw m1"></span><span data-stat="m1">0</span></span></div>
-            </dd></div>
-            <div class="wide"><dt>Leading the swarm</dt><dd data-stat="leader">–</dd></div>
-          </dl>
-        </div>
-
-        <div class="panel">
-          <h2>What just happened</h2>
-          <ol class="feed" data-feed aria-live="polite"></ol>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <section class="section">
-    <div class="wrap">
-      <h2>Try these, in order</h2>
-      <ol class="steps">
-        <li><b>Watch a wave</b>Every 10 seconds, ten threats fly in. Each blue drone takes one and stops it before it reaches the cross.</li>
-        <li><b>Destroy the leader</b>The drones turn amber for a moment, then blue again once a drone takes over as leader.</li>
-        <li><b>Cut all radio</b>Every drone turns red and defends on its own. Watch the average reaction time climb.</li>
-        <li><b>Turn the radio back on</b>Press Cut all radio again. Within a second the drones are back to blue.</li>
-      </ol>
-      <p style="margin-top:20px">Want every setting, from radio range to message loss? <a href="../index.html">Open the full engineering simulator →</a></p>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <nav class="pager" aria-label="Previous and next page">
-      <a class="prev" href="how-it-works.html"><span class="dir">← Previous</span><b>How it works</b></a>
-      <a class="next primary" href="results.html"><span class="dir">Next</span><b>Results →</b></a>
-    </nav>
-  </div>
-</main>
-
-<footer class="site-footer">
-  <div class="wrap">
-    <span>Swarm Comms Lab · Proof of concept, simulation only</span>
-    <span><a href="../index.html">Engineering simulator</a> · <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a></span>
-  </div>
-</footer>
+<p>This page has moved to the <a href="../presentation/#live">Swarm Comms Lab presentation</a>.</p>
 </body>
 </html>

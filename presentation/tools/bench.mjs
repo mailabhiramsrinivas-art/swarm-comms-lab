@@ -1,5 +1,5 @@
 // Run each preset over several seeds; report mean response time and breach share.
-// Reproduces the numbers on results.html. Usage, from the repository root: node investors/tools/bench.mjs
+// Reproduces the Results chapter of presentation/index.html. Usage, from the repository root: node presentation/tools/bench.mjs
 const root = new URL("../..", import.meta.url).href.replace(/\/$/, "");
 const { defaultConfig, PRESETS } = await import(root + '/js/config.js');
 const { Sim } = await import(root + '/js/sim.js');
