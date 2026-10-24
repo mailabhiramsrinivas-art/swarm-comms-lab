@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swarm Comms Lab · Drones that talk and decide as one team</title>
+<meta name="description" content="Our model combines a communication layer that keeps drones coordinated when radio links fail with a decision layer that reads an enemy formation and sends exactly the drones it needs.">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+<script type="module" src="assets/model-demo.js"></script>
+<script type="module" src="assets/demo.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" id="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" fill-opacity=".1"/><path d="M16 9 L9 21 L23 21 Z" fill="none" stroke="#9fc8ef" stroke-width="1.6"/><circle cx="16" cy="9" r="3.2" fill="#4da3ff"/><circle cx="9" cy="21" r="3.2" fill="#4da3ff"/><circle cx="23" cy="21" r="3.2" fill="#4da3ff"/></svg>Swarm Comms Lab</a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav class="site-nav" id="site-nav" aria-label="Chapters">
+      <ul>
+        <li><a href="#problem"><span class="step">1</span>The problem</a></li>
+        <li><a href="#model"><span class="step">2</span>Our model</a></li>
+        <li><a href="#talk"><span class="step">3</span>How it talks</a></li>
+        <li><a href="#live"><span class="step">4</span>Try it live</a></li>
+        <li><a href="#decide"><span class="step">5</span>How it decides</a></li>
+        <li><a href="#results"><span class="step">6</span>Results</a></li>
+        <li><a href="#next"><span class="step">7</span>What's next</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</header>
+
+<main id="main">
+
+  <!-- ======================= Opening: our model in action ======================= -->
+  <div class="wrap">
+    <section class="hero-model">
+      <div class="hero-text">
+        <div class="kicker">Swarm Comms Lab <span class="chip"><span class="dot"></span>Our model</span></div>
+        <h1>Drones that talk and decide as one team</h1>
+        <p class="lead">Our model combines two layers. The communication layer keeps every drone in touch, even when radio links fail. The decision layer reads an enemy formation and sends exactly the drones it needs. Below, the same attack plays out with and without it.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#model">See how it works ↓</a>
+          <a class="btn btn-ghost" href="#live">Try it live</a>
+        </div>
+      </div>
+
+      <div class="demo-card" data-model-demo>
+        <div class="head">
+          <h2>Demonstration: the same attack, with and without our model</h2>
+          <div class="demo-controls">
+            <button type="button" data-action="play">Pause</button>
+            <button type="button" data-action="restart">Restart</button>
+            <select data-speed aria-label="Speed"><option value="0.5">0.5× speed</option><option value="1" selected>1× speed</option></select>
+            <input type="range" data-scrub min="0" max="20" step="0.1" value="0" aria-label="Scrub through the demonstration">
+            <span data-time>0.0 s</span>
+          </div>
+        </div>
+        <div class="scenes">
+          <div class="scene" data-scene="plain">
+            <h3><span class="tag">Without</span>Communication alone</h3>
+            <canvas aria-label="Communication alone: all 8 drones go for the nearest threats"></canvas>
+            <p class="caption" data-caption></p>
+            <dl class="mini"><div><dt>Drones sent</dt><dd data-stat="sent">0</dd></div><div><dt>Rounds</dt><dd data-stat="rounds">0</dd></div><div><dt>Blocked hits</dt><dd data-stat="blocked">0</dd></div><div><dt>Got through</dt><dd data-stat="through">0</dd></div></dl>
+          </div>
+          <div class="scene ours" data-scene="model">
+            <h3><span class="tag">Our model</span>Communication + decisions</h3>
+            <canvas aria-label="Our model: reads the formation, sends the smallest winning team and takes the formation apart from the outside in"></canvas>
+            <p class="caption" data-caption></p>
+            <dl class="mini"><div><dt>Drones sent</dt><dd data-stat="sent">0</dd></div><div><dt>Rounds</dt><dd data-stat="rounds">0</dd></div><div><dt>Blocked hits</dt><dd data-stat="blocked">0</dd></div><div><dt>Got through</dt><dd data-stat="through">0</dd></div></dl>
+          </div>
+        </div>
+        <ul class="demo-legend">
+          <li><span class="d" style="background:#ffd166"></span>Sighting: "I see a threat"</li>
+          <li><span class="d" style="background:#5ee6ff"></span>Plan: the leader assigns jobs</li>
+          <li><span class="d" style="background:#ff9f43"></span>Claim: "I'll take this one"</li>
+          <li><span class="d" style="background:#4da3ff;border-radius:2px"></span>Our drone</li>
+          <li><span class="d" style="background:#b18cff"></span>Leader</li>
+          <li><span class="d" style="background:#ff4d6d"></span>Threat, can be hit</li>
+          <li><span class="d" style="background:#3ddc97"></span>Threat, shielded</li>
+          <li><span class="d" style="background:#9a8c93"></span>Threat, not yet read</li>
+        </ul>
+        <p class="demo-note">Illustration of how our model works: a small 2D simulation using the formation game's rules.</p>
+      </div>
+    </section>
+
+    <div class="stats three" style="margin-top:28px">
+      <div class="stat"><div class="label">Leader destroyed twice</div><div class="value">0 <small>of 1,146</small></div><div class="note">threats got through in our tests</div></div>
+      <div class="stat"><div class="label">Every radio message lost</div><div class="value">94%</div><div class="note">of threats still stopped</div></div>
+      <div class="stat"><div class="label">Lost leader replaced</div><div class="value">≈ 1 s</div><div class="note">automatically, with no person involved</div></div>
+    </div>
+
+    <h2 class="sub-h" style="margin-top:48px">In this presentation</h2>
+    <ol class="agenda">
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#model">Our model</a></li>
+      <li><a href="#talk">How it talks</a></li>
+      <li><a href="#live">Try it live</a></li>
+      <li><a href="#decide">How it decides</a></li>
+      <li><a href="#results">Results</a></li>
+      <li><a href="#next">What's next</a></li>
+    </ol>
+  </div>
+
+  <!-- ======================= 1. Problem ======================= -->
+  <section class="chapter band" id="problem">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">1</span>The problem</div>
+        <h2>Defending against a swarm takes teamwork, and teamwork runs on radio</h2>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></div>
+          <h3>Attackers come as a group</h3>
+          <p>Enemy drones arrive together, often in a formation where the outer drones protect the inner ones. Each defender must know which target is its job.</p>
+        </div>
+        <div class="card">
+          <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 11a7 7 0 0 1 14 0M8.5 11a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="11" r="1.2" fill="currentColor"/><path d="M12 12.5V20"/></svg></div>
+          <h3>Splitting the work needs radio</h3>
+          <p>To divide the targets, drones share what they see and who is taking what, over radio links between them.</p>
+        </div>
+        <div class="card">
+          <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 7 6.5 9.5a4 4 0 0 0 5.7 5.6M15 17l2.5-2.5a4 4 0 0 0-5.7-5.6M4 4l16 16"/></svg></div>
+          <h3>Radio is the weak point</h3>
+          <p>Links get jammed, fade with distance, or the station giving orders is destroyed. A swarm that freezes without its radio is no defence at all.</p>
+        </div>
+      </div>
+      <div class="bridge">
+        <p>So we built a model that decides well and keeps talking, whatever happens to the radio.</p>
+        <a href="#model">Our model ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 2. Our model ======================= -->
+  <section class="chapter" id="model">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">2</span>Our model</div>
+        <h2>One team, two layers</h2>
+        <p>Every drone runs the same software. Its two layers work together: one decides, the other makes sure every drone hears the decision.</p>
+      </div>
+      <div class="layers">
+        <div class="layer decide">
+          <div class="k">Decision layer</div>
+          <h3>Decides who goes where</h3>
+          <ul>
+            <li>Reads an enemy formation: which threats can be hit now, and which are shielded.</li>
+            <li>Picks the smallest team that wins in time, and where each drone starts.</li>
+            <li>Each round, matches drones to threats so no strike is wasted.</li>
+          </ul>
+        </div>
+        <div class="link" aria-hidden="true">⇄</div>
+        <div class="layer talk">
+          <div class="k">Communication layer</div>
+          <h3>Makes sure every drone hears it</h3>
+          <ul>
+            <li>Carries sightings, plans and claims between drones.</li>
+            <li>Keeps the team coordinated as links get jammed or fade.</li>
+            <li>Replaces a lost leader automatically, in about a second.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">One attack, four steps</h3>
+        <ol class="steps">
+          <li><b>Spot</b>A drone sees the threat. The warning hops from drone to drone until the whole team knows.</li>
+          <li><b>Decide</b>Our model reads the formation and picks the team, and where each drone starts.</li>
+          <li><b>Share</b>The plan reaches every chosen drone by radio, five times a second.</li>
+          <li><b>Strike</b>Drones that can reach the same threat agree who takes it, then strike together, round after round.</li>
+        </ol>
+      </div>
+
+      <div class="bridge">
+        <p>Next, a closer look at how the drones talk to each other.</p>
+        <a href="#talk">How it talks ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 3. How it talks ======================= -->
+  <section class="chapter band" id="talk">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">3</span>How it talks</div>
+        <h2>Three kinds of short radio message</h2>
+        <p>Drones talk many times a second. Every message is one of three kinds, shown in the same colours as the demonstration. Most are under 20 bytes, small enough to get through weak links.</p>
+      </div>
+      <div class="msgs">
+        <div class="msg">
+          <div class="say"><i style="background:#ffd166"></i>Sighting</div>
+          <h3>"I see a threat here"</h3>
+          <p>Each drone shares what its own camera sees. Messages hop from drone to drone, so a warning reaches drones far out of direct range.</p>
+        </div>
+        <div class="msg">
+          <div class="say"><i style="background:#5ee6ff"></i>Plan</div>
+          <h3>"You take this one"</h3>
+          <p>The leader turns our model's decision into a job for every drone and sends it five times a second. The ground station leads whenever drones can hear it.</p>
+        </div>
+        <div class="msg">
+          <div class="say"><i style="background:#ff9f43"></i>Claim</div>
+          <h3>"I'll take this one"</h3>
+          <p>Drones that can reach the same threat agree among themselves who takes it, so two drones never strike the same one.</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">When the radio gets worse, the team adapts on its own</h3>
+        <div class="ladder">
+          <div class="axis" aria-hidden="true"><span>Good radio</span><span>No radio</span></div>
+          <div class="mode m3"><span class="tag">Blue</span><h3>Follow the team plan</h3><p>Plans arrive from the leader. Every drone does the job it was given.</p></div>
+          <div class="mode m2"><span class="tag">Amber</span><h3>Agree with neighbours</h3><p>If plans stop arriving, drones that can still hear each other share out the threats with claims. The best-placed drone takes each one.</p></div>
+          <div class="mode m1"><span class="tag">Red</span><h3>Act alone</h3><p>If a drone hears nobody, it goes after the most urgent threat its own camera can see.</p></div>
+        </div>
+        <p class="intro" style="margin-top:16px">Each drone checks what it can hear many times a second and moves back up to a better mode as soon as the radio allows. Nobody has to switch it.</p>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">If the leader is lost, a drone takes over in about a second</h3>
+        <div class="card timeline">
+          <div class="tl-marks" aria-hidden="true">
+            <div class="tl-mark" style="left:0%;transform:none;text-align:left"><div class="t">0 s</div><div class="pin" style="margin-left:0"></div></div>
+            <div class="tl-mark" style="left:36%"><div class="t">≈ 0.5 s</div><div class="pin"></div></div>
+            <div class="tl-mark" style="left:75%"><div class="t">≈ 1 s</div><div class="pin"></div></div>
+          </div>
+          <div class="tl-track" role="img" aria-label="Timeline: leader destroyed at 0 seconds, drones switch to agreeing with neighbours after about half a second, a drone takes over as leader after about one second">
+            <div class="seg" style="width:36%;background:#a9cdf3"></div>
+            <div class="seg" style="width:39%;background:var(--m2)"></div>
+            <div class="seg" style="width:25%;background:var(--m3)"></div>
+          </div>
+          <div class="tl-labels">
+            <div><b>Leader destroyed</b>Drones keep doing the last jobs they were given.</div>
+            <div><b>No fresh plan</b>Drones switch to agreeing with neighbours. The defence never pauses.</div>
+            <div><b>A drone takes over</b>The lowest-numbered drone still in contact becomes the leader, and plans resume. If the old leader comes back, it takes over again.</div>
+          </div>
+        </div>
+        <p class="small muted" style="margin-top:10px">Measured over 5 runs: the first drones switch after about 0.5 s, a new leader is in place after about 1.0 s, and every drone follows it by 1.1 s.</p>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">Built to keep working</h3>
+        <div class="grid-3">
+          <div class="card"><h3>No fixed roles</h3><p>Any drone can lead. The leader is simply the lowest-numbered one in contact, with the ground station always first in line.</p></div>
+          <div class="card"><h3>No voting</h3><p>Every drone applies the same rule to the same information, so they agree without sending extra messages.</p></div>
+          <div class="card"><h3>Share what you see</h3><p>Drones pass on raw sightings, not opinions, so every drone builds the same picture of the sky.</p></div>
+          <div class="card"><h3>Act first, fix later</h3><p>A drone commits to a target straight away. Two drones briefly chasing one threat costs less than everyone hesitating.</p></div>
+          <div class="card"><h3>Flying stays on board</h3><p>Each drone steers itself. The radio carries only decisions, so a lost message costs time, never control of the drone.</p></div>
+          <div class="card" style="background:var(--brand);border-color:var(--brand);color:#fff"><h3>The result</h3><p style="color:#c9dbea">No single drone or station is essential. Lose any one of them and the rest keep defending.</p></div>
+        </div>
+
+        <details class="tech">
+          <summary><div>For technical readers<span>Algorithms, messages and timings</span></div></summary>
+          <div class="body">
+            <h4>Assignment</h4>
+            <p>The leader computes a globally optimal drone-to-threat assignment with the Hungarian algorithm and broadcasts it as a PLAN at 5 Hz. Without a plan, drones send CLAIMs with a cost; the lowest cost wins and ties go to the lower ID, so every drone resolves conflicts identically without another round of messages.</p>
+            <h4>Leader election</h4>
+            <p>The coordinator is the lowest ID heard recently. The ground station is ID 0. When it is silent past the leader timeout (1.0 s) the next lowest ID takes over; when a lower ID reappears, the stand-in steps down.</p>
+            <h4>Messages</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Type</th><th>Sent by</th><th>Meaning</th><th class="num">Size</th></tr></thead>
+                <tbody>
+                  <tr><td>STATE</td><td>everyone, 5 Hz</td><td>My position, velocity, target and mode. Doubles as a heartbeat.</td><td class="num">17 B</td></tr>
+                  <tr><td>OBS</td><td>anyone seeing threats, 5 Hz</td><td>What my own sensor sees right now (a sighting).</td><td class="num">10 + 7 per threat</td></tr>
+                  <tr><td>CLAIM</td><td>drones with a target</td><td>"I'm taking target T at cost C."</td><td class="num">12 B</td></tr>
+                  <tr><td>RELEASE</td><td>the drone that intercepts</td><td>"Target T is done."</td><td class="num">11 B</td></tr>
+                  <tr><td>PLAN</td><td>leader, 5 Hz</td><td>An assignment for every known drone.</td><td class="num">10 + 2/drone + 7/target</td></tr>
+                  <tr><td>ELECT</td><td>a new leader</td><td>"I'm coordinating now."</td><td class="num">9 B</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p style="margin-top:12px">Every message carries origin, sequence number, timestamp and hop limit (a 9-byte header) and is relayed by flooding up to 3 hops (claims at most 2). Timeouts: plan 0.6 s, contact 0.6 s, leader 1.0 s. Every setting can be changed in the <a href="../index.html">engineering simulator</a>.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="bridge">
+        <p>See it for yourself: break the radio and watch the team adapt.</p>
+        <a href="#live">Try it live ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 4. Try it live ======================= -->
+  <section class="chapter" id="live">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">4</span>Try it live <span class="chip"><span class="dot"></span>Running in your browser</span></div>
+        <h2>Break the radio and watch the team adapt</h2>
+        <p>This is the simulator of our communication layer. Eight drones guard the site in the centre while waves of threats fly in from the edges. Use the buttons to make things go wrong.</p>
+      </div>
+
+      <div class="demo" data-demo>
+        <div class="radar-card">
+          <canvas aria-label="Live simulation of the drone swarm. Drones circle the site in the centre; threats fly in from the edges."></canvas>
+          <ul class="legend on-dark">
+            <li><span class="sw m3"></span>Following the plan</li>
+            <li><span class="sw m2"></span>Agreeing with neighbours</li>
+            <li><span class="sw m1"></span>On its own</li>
+            <li><span class="sw gs"></span>Ground station (GS)</li>
+            <li><span class="sw enemy"></span>Threat</li>
+          </ul>
+          <div class="radar-caption"><span class="live">Live</span><span>D1 to D8 are our drones · the cross is the site</span><button type="button" data-action="play">Pause</button></div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Make something go wrong</h2>
+            <div class="controls">
+              <button class="ctl" type="button" data-action="kill">
+                <span class="ic" style="color:var(--m1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4l-5.3 3 1.2-6-4.5-4.1 6-.7z"/></svg></span>
+                <b>Destroy the leader</b><span>Drones flash amber, then turn blue again as another drone takes over.</span>
+              </button>
+              <button class="ctl" type="button" data-action="jam" aria-pressed="false">
+                <span class="ic" style="color:var(--m2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l3-5 3 10 3-10 3 10 3-10 3 5"/></svg></span>
+                <b>Jam the radio in one area</b><span>Threats fly in through the orange zone. Drones inside it lose the plan.</span>
+              </button>
+              <button class="ctl" type="button" data-action="cut" aria-pressed="false">
+                <span class="ic" style="color:var(--m1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/><path d="M3 3l18 18"/></svg></span>
+                <b>Cut all radio</b><span>Every drone turns red and works alone. Threats are still stopped, just more slowly.</span>
+              </button>
+              <button class="ctl" type="button" data-action="wave">
+                <span class="ic" style="color:var(--brand-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h9M3 12h13M3 18h9M17 8l4 4-4 4"/></svg></span>
+                <b>Send an extra wave</b><span>Ten more threats, on top of the automatic wave every 10 seconds.</span>
+              </button>
+              <div class="ctl-row">
+                <button type="button" data-action="respawn">Replace lost drones</button>
+                <button type="button" data-action="reset">Restart</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Right now</h2>
+            <dl class="readout">
+              <div><dt>Threats stopped</dt><dd data-stat="stopped">0</dd></div>
+              <div><dt>Got through</dt><dd data-stat="through">0</dd></div>
+              <div><dt>Average reaction</dt><dd data-stat="reaction">–</dd></div>
+              <div><dt>Drones by mode</dt><dd style="font-size:1rem">
+                <div class="modes-bar" data-modes aria-hidden="true"><i style="background:var(--m3)"></i><i style="background:var(--m2)"></i><i style="background:var(--m1)"></i></div>
+                <div class="modes-count"><span><span class="sw m3"></span><span data-stat="m3">0</span></span><span><span class="sw m2"></span><span data-stat="m2">0</span></span><span><span class="sw m1"></span><span data-stat="m1">0</span></span></div>
+              </dd></div>
+              <div class="wide"><dt>Leading the swarm</dt><dd data-stat="leader">–</dd></div>
+            </dl>
+          </div>
+
+          <div class="panel">
+            <h2>What just happened</h2>
+            <ol class="feed" data-feed aria-live="polite"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">Try these, in order</h3>
+        <ol class="steps">
+          <li><b>Watch a wave</b>Every 10 seconds, ten threats fly in. Each blue drone takes one and stops it before it reaches the cross.</li>
+          <li><b>Destroy the leader</b>The drones turn amber for a moment, then blue again once a drone takes over as leader.</li>
+          <li><b>Cut all radio</b>Every drone turns red and defends on its own. Watch the average reaction time climb.</li>
+          <li><b>Turn the radio back on</b>Press Cut all radio again. Within a second the drones are back to blue.</li>
+        </ol>
+        <p style="margin-top:20px">Want every setting, from radio range to message loss? <a href="../index.html">Open the full engineering simulator →</a></p>
+      </div>
+
+      <div class="bridge">
+        <p>Communication keeps the team together. Next: how our model decides what the team should do.</p>
+        <a href="#decide">How it decides ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 5. How it decides ======================= -->
+  <section class="chapter band" id="decide">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">5</span>How it decides</div>
+        <h2>Taking a formation apart, from the outside in</h2>
+        <p>Our model's decision layer was trained on a 3D formation game that captures the heart of the problem: an enemy formation protects its inner drones, so the defenders have to read it and peel it layer by layer.</p>
+      </div>
+
+      <div class="grid-2" style="align-items:center;gap:32px">
+        <figure class="shot">
+          <img src="assets/img/formation-game.jpg" width="1200" height="757" alt="3D view of a recorded game: twelve enemy drones in formation, linked by lines, with six blue diamond-shaped drones placed among them, each surrounded by a translucent sphere." loading="lazy">
+          <figcaption>A recorded game in 3D. Red enemies are on the outside and can be hit; the green ones are shielded inside. Our 6 drones are the blue diamonds, each shown with its reach.</figcaption>
+        </figure>
+        <div>
+          <h3 class="sub-h">The game in plain words</h3>
+          <ul class="plain-list">
+            <li><b>An enemy formation.</b> Between 4 and 20 enemy drones hold a shape in 3D space. They flee from our drones while trying to stay together.</li>
+            <li><b>Only the outside can be hit.</b> Enemies deep inside are shielded by the ones around them, so the formation has to be peeled from the outside in.</li>
+            <li><b>Five rounds, fewest drones.</b> Our team has five rounds to remove every enemy. Using fewer drones scores better, so sending too many is a cost, not a safe choice.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">Three decisions, every engagement</h3>
+        <div class="fig-steps">
+          <div class="card">
+            <svg viewBox="0 0 240 150" role="img" aria-label="A formation of fourteen enemies: ten on the outside marked red, four inside marked green">
+              <g stroke="#c9cfd2" stroke-width="1" fill="none">
+                <polygon points="172,75 162,101 136,117 104,117 78,101 68,75 78,49 104,33 136,33 162,49"/>
+                <path d="M108,64 132,64 132,86 108,86Z M108,64 104,33 M108,64 78,49 M132,64 136,33 M132,64 162,49 M132,86 162,101 M132,86 136,117 M108,86 104,117 M108,86 78,101 M108,64 68,75 M132,86 172,75"/>
+              </g>
+              <g fill="#e5534b"><circle cx="172" cy="75" r="6"/><circle cx="162" cy="101" r="6"/><circle cx="136" cy="117" r="6"/><circle cx="104" cy="117" r="6"/><circle cx="78" cy="101" r="6"/><circle cx="68" cy="75" r="6"/><circle cx="78" cy="49" r="6"/><circle cx="104" cy="33" r="6"/><circle cx="136" cy="33" r="6"/><circle cx="162" cy="49" r="6"/></g>
+              <g fill="#1baf7a"><circle cx="108" cy="64" r="6"/><circle cx="132" cy="64" r="6"/><circle cx="108" cy="86" r="6"/><circle cx="132" cy="86" r="6"/></g>
+              <g font-size="10.5" fill="#46525a" font-family="system-ui, sans-serif"><circle cx="16" cy="137" r="4.5" fill="#e5534b"/><text x="25" y="141">can be hit</text><circle cx="96" cy="137" r="4.5" fill="#1baf7a"/><text x="105" y="141">shielded</text></g>
+            </svg>
+            <div class="n">Decision 1</div>
+            <h3>Read the shape</h3>
+            <p>It works out which enemies are exposed on the outside and which are shielded inside. That decides who can be hit right now.</p>
+          </div>
+          <div class="card">
+            <svg viewBox="0 0 240 150" role="img" aria-label="The same formation with six blue drones placed around it">
+              <g stroke="#c9cfd2" stroke-width="1" fill="none">
+                <polygon points="172,75 162,101 136,117 104,117 78,101 68,75 78,49 104,33 136,33 162,49"/>
+                <path d="M108,64 132,64 132,86 108,86Z"/>
+              </g>
+              <g fill="#e5534b"><circle cx="172" cy="75" r="6"/><circle cx="162" cy="101" r="6"/><circle cx="136" cy="117" r="6"/><circle cx="104" cy="117" r="6"/><circle cx="78" cy="101" r="6"/><circle cx="68" cy="75" r="6"/><circle cx="78" cy="49" r="6"/><circle cx="104" cy="33" r="6"/><circle cx="136" cy="33" r="6"/><circle cx="162" cy="49" r="6"/></g>
+              <g fill="#1baf7a"><circle cx="108" cy="64" r="6"/><circle cx="132" cy="64" r="6"/><circle cx="108" cy="86" r="6"/><circle cx="132" cy="86" r="6"/></g>
+              <g fill="#2a78d6" stroke="#fff" stroke-width="1.5"><path d="M196,67 204,75 196,83 188,75Z"/><path d="M160,119 168,127 160,135 152,127Z"/><path d="M80,119 88,127 80,135 72,127Z"/><path d="M44,67 52,75 44,83 36,75Z"/><path d="M80,15 88,23 80,31 72,23Z"/><path d="M160,15 168,23 160,31 152,23Z"/></g>
+              <text x="228" y="141" text-anchor="end" font-size="10.5" fill="#46525a" font-family="system-ui, sans-serif">6 drones chosen</text>
+            </svg>
+            <div class="n">Decision 2</div>
+            <h3>Choose the team and place it</h3>
+            <p>It estimates its chance of winning with 1, 2, 3 or more drones and picks the smallest team with at least a 90% chance. Then it decides where each drone starts.</p>
+          </div>
+          <div class="card">
+            <svg viewBox="0 0 240 150" role="img" aria-label="The outer enemies are gone, the four inner enemies are now red and can be hit, and the six blue drones have closed in">
+              <g stroke="#d9dddb" stroke-width="1" fill="none" stroke-dasharray="3 3"><circle cx="172" cy="75" r="6"/><circle cx="162" cy="101" r="6"/><circle cx="136" cy="117" r="6"/><circle cx="104" cy="117" r="6"/><circle cx="78" cy="101" r="6"/><circle cx="68" cy="75" r="6"/><circle cx="78" cy="49" r="6"/><circle cx="104" cy="33" r="6"/><circle cx="136" cy="33" r="6"/><circle cx="162" cy="49" r="6"/></g>
+              <path d="M108,64 132,64 132,86 108,86Z" stroke="#c9cfd2" stroke-width="1" fill="none"/>
+              <g fill="#e5534b"><circle cx="108" cy="64" r="6"/><circle cx="132" cy="64" r="6"/><circle cx="108" cy="86" r="6"/><circle cx="132" cy="86" r="6"/></g>
+              <g fill="#2a78d6" stroke="#fff" stroke-width="1.5"><path d="M156,67 164,75 156,83 148,75Z"/><path d="M138,96 146,104 138,112 130,104Z"/><path d="M102,96 110,104 102,112 94,104Z"/><path d="M84,67 92,75 84,83 76,75Z"/><path d="M102,38 110,46 102,54 94,46Z"/><path d="M138,38 146,46 138,54 130,46Z"/></g>
+              <text x="228" y="141" text-anchor="end" font-size="10.5" fill="#46525a" font-family="system-ui, sans-serif">outer layer gone</text>
+            </svg>
+            <div class="n">Decision 3</div>
+            <h3>Peel from the outside in</h3>
+            <p>Each round it moves its drones and decides who hits whom, so no two drones waste a strike on the same enemy. As the outer layer falls, the inner enemies become exposed.</p>
+          </div>
+        </div>
+        <p class="intro" style="margin-top:20px"><b>A real example from the test set:</b> 14 enemies held a formation with 4 shielded inside. Our model chose 6 drones and cleared the whole formation in 3 rounds.</p>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">How it learned</h3>
+        <ol class="steps three">
+          <li><b>Copy an expert</b>A slow planning program searched thousands of possible futures to find good moves. Our model learned by imitating it.</li>
+          <li><b>Practise</b>It then improved by trial and error, over 20,400 practice games.</li>
+          <li><b>Decide on its own</b>In use, the planner is gone. Our model makes every decision itself, fast enough to run in a web browser.</li>
+        </ol>
+        <div class="actions">
+          <a class="btn btn-primary" href="../simplex-game/#builder">Build a formation and watch our model respond →</a>
+          <a class="btn btn-ghost" href="../viewer/">Watch recorded games in 3D</a>
+        </div>
+      </div>
+
+      <div class="bridge">
+        <p>Both layers have been tested thousands of times. Here are the numbers.</p>
+        <a href="#results">Results ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 6. Results ======================= -->
+  <section class="chapter" id="results">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">6</span>Results <span class="chip">Measured 24 October 2026</span></div>
+        <h2>Tested thousands of times</h2>
+        <p>Each layer of our model was put through its own test programme.</p>
+      </div>
+
+      <h3 class="sub-h">Communication layer: five situations, from perfect radio to none</h3>
+      <ol class="steps">
+        <li><b>Five situations</b>Good radio, patchy radio, a jammed area, the leader destroyed twice, and no radio at all.</li>
+        <li><b>Ten runs each</b>Each run starts differently at random, so one lucky run can't skew the result.</li>
+        <li><b>Two minutes per run</b>A wave of 10 threats every 10 seconds: about 1,150 threats per situation.</li>
+        <li><b>Count what happened</b>Threats stopped, threats that reached the site, and how fast a drone took each one on.</li>
+      </ol>
+
+      <div class="section">
+        <div class="chart-card">
+          <h3>Losing the radio slows the team down, but it keeps defending</h3>
+          <p class="sub">Average time from first sighting of a threat to a drone taking it on, in seconds. Shorter is better.</p>
+          <ul class="bars">
+            <li tabindex="0" data-tip="Good radio: 0.32 s average reaction. 0 of 1,158 threats got through."><div class="name">Good radio</div><div class="track"><div class="fill" style="width:16%"></div><span class="val">0.32 s</span></div></li>
+            <li tabindex="0" data-tip="Patchy radio (35% of messages lost): 0.53 s average reaction. 3 of 1,151 threats got through."><div class="name">Patchy radio<small>35% of messages lost</small></div><div class="track"><div class="fill" style="width:26.5%"></div><span class="val">0.53 s</span></div></li>
+            <li tabindex="0" data-tip="Jammed area (95% of messages lost inside it): 0.53 s average reaction. 2 of 1,194 threats got through."><div class="name">Jammed area<small>95% lost inside the zone</small></div><div class="track"><div class="fill" style="width:26.5%"></div><span class="val">0.53 s</span></div></li>
+            <li tabindex="0" data-tip="Leader destroyed at 6 s and again at 14 s: 0.43 s average reaction. 0 of 1,146 threats got through."><div class="name">Leader destroyed twice<small>at 6 s and 14 s</small></div><div class="track"><div class="fill" style="width:21.5%"></div><span class="val">0.43 s</span></div></li>
+            <li tabindex="0" data-tip="No radio at all: 1.53 s average reaction. 74 of 1,145 threats got through."><div class="name">No radio at all<small>every message lost</small></div><div class="track"><div class="fill" style="width:76.5%"></div><span class="val">1.53 s</span></div></li>
+          </ul>
+          <div class="axis-row" aria-hidden="true"><div></div><div class="axis-ticks"><span style="left:0">0</span><span style="left:25%">0.5</span><span style="left:50%">1.0</span><span style="left:75%">1.5</span><span style="left:100%;transform:translateX(-100%)">2.0 s</span></div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">Almost nothing gets through while any radio is left</h3>
+        <p class="intro">Threats that reached the protected site, out of all threats that were stopped or got through.</p>
+        <div class="stats five">
+          <div class="stat"><div class="label">Good radio</div><div class="value">0 <small>of 1,158</small></div><div class="note">got through</div></div>
+          <div class="stat"><div class="label">Patchy radio</div><div class="value">3 <small>of 1,151</small></div><div class="note">got through (0.3%)</div></div>
+          <div class="stat"><div class="label">Jammed area</div><div class="value">2 <small>of 1,194</small></div><div class="note">got through (0.2%)</div></div>
+          <div class="stat"><div class="label">Leader lost twice</div><div class="value">0 <small>of 1,146</small></div><div class="note">got through</div></div>
+          <div class="stat"><div class="label">No radio at all</div><div class="value">94%</div><div class="note">still stopped (1,071 of 1,145)</div></div>
+        </div>
+        <details class="more">
+          <summary>Show all the numbers as a table</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Situation</th><th>What changes</th><th class="num">Stopped</th><th class="num">Got through</th><th class="num">Average reaction</th><th class="num">Time in blue mode</th></tr></thead>
+              <tbody>
+                <tr><td>Good radio</td><td>2% of messages lost</td><td class="num">1,158</td><td class="num">0</td><td class="num">0.32 s</td><td class="num">100%</td></tr>
+                <tr><td>Patchy radio</td><td>35% lost, shorter range</td><td class="num">1,148</td><td class="num">3</td><td class="num">0.53 s</td><td class="num">96%</td></tr>
+                <tr><td>Jammed area</td><td>95% lost inside one zone</td><td class="num">1,192</td><td class="num">2</td><td class="num">0.53 s</td><td class="num">92%</td></tr>
+                <tr><td>Leader destroyed twice</td><td>ground station at 6 s, next leader at 14 s</td><td class="num">1,146</td><td class="num">0</td><td class="num">0.43 s</td><td class="num">99%</td></tr>
+                <tr><td>No radio at all</td><td>every message lost</td><td class="num">1,071</td><td class="num">74</td><td class="num">1.53 s</td><td class="num">0%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small muted" style="margin-top:8px">Totals over 10 runs of 2 simulated minutes each. "Time in blue mode" is the share of drone-time spent following the team plan.</p>
+        </details>
+      </div>
+
+      <div class="section">
+        <h3 class="sub-h">Decision layer: 850 formations it had never seen</h3>
+        <div class="stats">
+          <div class="stat"><div class="label">Fresh test cases</div><div class="value">850</div><div class="note">formations of 4 to 20 enemies, never seen in training, five games each</div></div>
+          <div class="stat"><div class="label">Small formations</div><div class="value">85%</div><div class="note">of games won against 4 to 6 enemies, with its own choice of team size</div></div>
+          <div class="stat"><div class="label">Practice games</div><div class="value">20,400</div><div class="note">of trial and error after learning from the expert planner</div></div>
+          <div class="stat"><div class="label">Runs in a browser</div><div class="value">119 <small>of 119</small></div><div class="note">test formations where the browser version made exactly the same decisions as the original</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="callout good">
+          <h3>What this shows</h3>
+          <ul>
+            <li><b>The fallback works.</b> With the leader destroyed twice in every run, not one threat got through.</li>
+            <li><b>Losing radio costs speed, not the defence.</b> With every message lost, 94% of threats were still stopped.</li>
+            <li><b>The team heals itself.</b> No person stepped in during any run: leaders were replaced and modes changed on their own.</li>
+            <li><b>Our model reads formations.</b> It sizes its response to the shape in front of it, and runs fast enough for a web browser.</li>
+          </ul>
+        </div>
+
+        <details class="tech">
+          <summary><div>For technical readers<span>How to reproduce these numbers</span></div></summary>
+          <div class="body">
+            <p>The five situations are the simulator's built-in presets (Clear skies, Patchy links, Interference zone, Coordinator lost, Total blackout) with 8 drones and a ground station. Each was run with random seeds 1 to 10 for 120 simulated seconds at 60 steps per second. Reaction time is measured from the moment a threat is first seen to the moment a drone targets it; a breach is a threat reaching the protected site.</p>
+            <p>From the repository root, run <code>node presentation/tools/bench.mjs</code> to repeat the measurement. Decision-layer figures come from the formation game's final evaluation: 850 test formations, five games each.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="bridge">
+        <p>Where our model goes from here.</p>
+        <a href="#next">What's next ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 7. What's next ======================= -->
+  <section class="chapter band" id="next">
+    <div class="wrap">
+      <div class="chapter-head">
+        <div class="kicker"><span class="num">7</span>What's next</div>
+        <h2>Built in weeks, ready to grow</h2>
+        <p>In October 2026 the project went from a first simulator to a trained decision layer. These are the next steps for our model.</p>
+      </div>
+      <div class="grid-2" style="align-items:start">
+        <div class="card">
+          <h3 class="sub-h">Built so far</h3>
+          <ol class="road">
+            <li class="done"><span class="when">12 Oct 2026</span><b>Communication layer</b><p>The three modes, automatic leader handover and five test situations.</p></li>
+            <li class="done"><span class="when">13 Oct 2026</span><b>3D game viewer</b><p>Recorded formation games played back in 3D, with video export for presentations.</p></li>
+            <li class="done"><span class="when">20 Oct 2026</span><b>Decision layer in the browser</b><p>The trained decision layer running on any computer, with a builder to test it on your own formations.</p></li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3 class="sub-h">Next steps</h3>
+          <ol class="road">
+            <li class="next"><span class="when">Step 1</span><b>Formation attacks in the full simulator</b><p>Our model chooses the team and targets inside the full swarm simulator, against waves that arrive as formations.</p></li>
+            <li class="next"><span class="when">Step 2</span><b>Tell threats apart</b><p>Each drone works out for itself which sighting belongs to which threat.</p></li>
+            <li class="next"><span class="when">Step 3</span><b>Train on partial views</b><p>Train our model on what each drone actually sees and hears, including delayed and lost messages.</p></li>
+            <li class="next"><span class="when">Step 4</span><b>Use less radio</b><p>Smarter message passing, so radio traffic stays manageable as the swarm grows.</p></li>
+            <li class="next"><span class="when">Step 5</span><b>Record everything</b><p>Log every message and decision, to train the next generation of our model.</p></li>
+            <li class="next"><span class="when">Step 6</span><b>3D world, realistic flight</b><p>Move from a flat map to full 3D with realistic flight physics.</p></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="end-card" style="margin-top:40px">
+        <h2>Thank you</h2>
+        <p>Everything here runs in your browser. Replay the demonstration, break the radio in the live simulator, or build an enemy formation and watch our model take it apart.</p>
+        <div class="actions">
+          <a class="btn" style="background:#fff;color:var(--brand)" href="#top">Back to the demonstration ↑</a>
+          <a class="btn" style="color:#fff;border-color:rgba(255,255,255,.45)" href="../simplex-game/#builder">Challenge our model</a>
+          <a class="btn" style="color:#fff;border-color:rgba(255,255,255,.45)" href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Swarm Comms Lab · Our model: communication and decisions as one team</span>
+    <span><a href="#top">Back to top ↑</a> · <a href="../index.html">Engineering simulator</a> · <a href="https://github.com/mailabhiramsrinivas-art/swarm-comms-lab">Source code</a></span>
+  </div>
+</footer>
+</body>
+</html>

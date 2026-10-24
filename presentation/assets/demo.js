@@ -186,7 +186,9 @@ export function mountDemo(root) {
     if (last == null) last = ts;
     const dt = Math.min(0.1, (ts - last) / 1000);
     last = ts;
-    if (playing && visible) {
+    // Off screen: no stepping and no drawing, so a long page stays light.
+    if (!visible) { acc = 0; requestAnimationFrame(frame); return; }
+    if (playing) {
       acc += dt;
       let steps = 0;
       while (acc >= DT && steps < 20) { sim.step(DT); acc -= DT; steps++; }
