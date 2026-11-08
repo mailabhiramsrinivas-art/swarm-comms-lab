@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How a Ramjet Works</title>
+<style>
+:root{
+  --bg:#f5f3ee; --surface:#ffffff; --surface-2:#eeebe4; --ink:#1a1c21; --ink-2:#474c56; --ink-3:#7a7f89;
+  --line:#dcd7cc; --accent:#d9480f; --accent-soft:#fde8dc; --cool:#1c7ed6; --good:#2b8a3e; --warn:#c92a2a;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111419; --surface:#181c23; --surface-2:#20252e; --ink:#eceef2; --ink-2:#b4bac5; --ink-3:#848b97;
+    --line:#2c323d; --accent:#ff7a3d; --accent-soft:#3a2216; --cool:#4dabf7; --good:#51cf66; --warn:#ff6b6b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111419; --surface:#181c23; --surface-2:#20252e; --ink:#eceef2; --ink-2:#b4bac5; --ink-3:#848b97;
+  --line:#2c323d; --accent:#ff7a3d; --accent-soft:#3a2216; --cool:#4dabf7; --good:#51cf66; --warn:#ff6b6b;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}
+.brand{font:600 13px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.theme-btn{background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:999px;padding:6px 12px;font:13px var(--sans);cursor:pointer}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.15;margin:0}
+h1{font-size:clamp(36px,6vw,60px);letter-spacing:-.01em}
+h2{font-size:clamp(26px,3.4vw,34px);margin-bottom:12px}
+h3{font-size:20px;margin-bottom:6px}
+p{margin:0 0 12px}
+.lede{font-size:clamp(17px,2vw,20px);color:var(--ink-2);max-width:720px;margin-top:16px}
+.hero{padding:48px 0 28px}
+.kicker{color:var(--accent);font:600 13px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+section{padding:40px 0;border-top:1px solid var(--line)}
+section.first{border-top:0;padding-top:8px}
+.muted{color:var(--ink-3)}
+.small{font-size:14px}
+
+/* ---- engine lab ---- */
+.stage{position:relative;background:#0c121a;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 20px 40px -24px rgba(0,0,0,.45)}
+.stage canvas{display:block;width:100%;aspect-ratio:1000/320;cursor:pointer}
+.status{position:absolute;left:14px;top:12px;right:14px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.pill{font:600 12px/1 var(--sans);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);color:#dfe6ee;backdrop-filter:blur(4px)}
+.pill.good{background:rgba(64,192,87,.18);color:#8ce99a}
+.pill.warn{background:rgba(250,82,82,.2);color:#ffa8a8}
+.pill.info{background:rgba(77,171,247,.18);color:#a5d8ff}
+.lab{display:grid;grid-template-columns:330px 1fr;gap:20px;margin-top:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.ctrl{margin-bottom:18px}
+.ctrl:last-child{margin-bottom:0}
+.ctrl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.ctrl label{font-weight:600;font-size:14px}
+.ctrl output{font:600 15px var(--mono);color:var(--accent)}
+.ctrl .hint{font-size:12.5px;color:var(--ink-3);margin-top:4px;line-height:1.4}
+input[type=range]{width:100%;accent-color:var(--accent);height:24px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface-2);padding:4px;border-radius:9px}
+.seg button{border:0;background:transparent;color:var(--ink-2);font:600 12.5px var(--sans);padding:8px 4px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets button{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:13px var(--sans);padding:6px 10px;border-radius:999px;cursor:pointer}
+.presets button:hover{border-color:var(--accent);color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface-2);border-radius:10px;padding:12px}
+.kpi .v{font:600 22px/1.1 var(--mono);color:var(--ink)}
+.kpi .u{font:12px var(--sans);color:var(--ink-3);margin-left:3px}
+.kpi .l{font-size:12.5px;color:var(--ink-2);margin-top:4px;line-height:1.3}
+.message{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14.5px;margin-bottom:16px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font:600 12px var(--sans);color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+td{font-family:var(--mono)}
+td:first-child{font-family:var(--sans);font-weight:600}
+.st{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 11px var(--sans);margin-right:8px}
+.effs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.bar{font-size:12.5px;color:var(--ink-2)}
+.bar .track{height:6px;background:var(--surface-2);border-radius:3px;margin-top:5px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:3px;transition:width .2s}
+
+/* ---- walkthrough ---- */
+.parts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.part{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s,transform .15s}
+.part:hover,.part.active{border-color:var(--accent)}
+.part.active{box-shadow:0 0 0 3px var(--accent-soft)}
+.part .num{font:600 12px var(--sans);color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.part p{font-size:14.5px;color:var(--ink-2)}
+.part p:last-child{margin-bottom:0}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.card p{color:var(--ink-2)}
+.try{border:0;background:var(--ink);color:var(--bg);font:600 13px var(--sans);padding:8px 14px;border-radius:999px;cursor:pointer;margin-top:4px}
+.try:hover{background:var(--accent)}
+.chart{width:100%;height:auto;display:block}
+.chart text{font-family:var(--sans);fill:var(--ink-3);font-size:11px}
+.timeline{list-style:none;padding:0;margin:0;display:grid;gap:0}
+.timeline li{display:grid;grid-template-columns:90px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.timeline li:last-child{border-bottom:0}
+.timeline .yr{font:600 20px var(--serif);color:var(--accent)}
+.timeline p{margin:0;color:var(--ink-2)}
+.eq{font:14px/1.9 var(--mono);background:var(--surface-2);border-radius:10px;padding:14px 16px;overflow-x:auto;color:var(--ink)}
+.eq .c{color:var(--ink-3)}
+dl.gloss{display:grid;grid-template-columns:200px 1fr;gap:10px 20px;margin:0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--ink-2)}
+footer{padding:28px 0 48px;color:var(--ink-3);font-size:13px;border-top:1px solid var(--line)}
+
+@media (max-width:900px){
+  .lab{grid-template-columns:1fr}
+  .parts{grid-template-columns:1fr 1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .two{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .parts{grid-template-columns:1fr}
+  .effs{grid-template-columns:1fr}
+  dl.gloss{grid-template-columns:1fr;gap:2px}
+  dl.gloss dd{margin-bottom:10px}
+  .timeline li{grid-template-columns:1fr;gap:4px}
+  .status .pill{font-size:11px}
+}
+@media print{
+  :root{--bg:#fff;--surface:#fff;--surface-2:#f1efea;--ink:#111;--ink-2:#333;--ink-3:#666;--line:#ddd;color-scheme:light}
+  body{font-size:12.5px}
+  .theme-btn,.presets,.try,.no-print{display:none!important}
+  section{padding:22px 0;break-inside:auto}
+  .card,.part,.panel,.kpi,.timeline li,.stage{break-inside:avoid}
+  .hero{padding:20px 0 10px}
+  .lab{grid-template-columns:260px 1fr}
+  .parts{grid-template-columns:repeat(2,1fr)}
+  .two{grid-template-columns:1fr 1fr}
+  .stage,.stage *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .kpi,.seg,.eq,.message{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Propulsion explainer</div>
+    <button class="theme-btn" id="themeBtn" type="button">Theme: auto</button>
+  </header>
+
+  <div class="hero">
+    <div class="kicker">An engine with no moving parts</div>
+    <h1>How a ramjet works</h1>
+    <p class="lede">A ramjet is a tube that uses its own forward speed to squeeze the incoming air. Fuel is burned in that compressed air, and the hot gas leaves the back faster than the air came in. There is no compressor, no turbine and nothing that spins. Move the controls below to see how each part of the engine responds.</p>
+  </div>
+
+  <!-- ===================== LAB ===================== -->
+  <section class="first" id="lab">
+    <div class="stage">
+      <canvas id="engine" aria-label="Animated cutaway of a ramjet engine showing airflow, shock waves, combustion and exhaust"></canvas>
+      <div class="status" id="status"></div>
+    </div>
+    <p class="small muted" style="margin-top:8px">Dots are parcels of air. Their speed follows the local flow velocity and their colour follows the local temperature, from blue (cold) through orange to white (hottest). White lines in front of the intake are shock waves. Click a region of the engine to read about it.</p>
+
+    <div class="lab">
+      <div class="panel" aria-label="Controls">
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="mach">Flight Mach number</label><output id="machOut"></output></div>
+          <input type="range" id="mach" min="0" max="6" step="0.05" value="3">
+          <div class="hint" id="machHint"></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="alt">Altitude</label><output id="altOut"></output></div>
+          <input type="range" id="alt" min="0" max="30" step="0.5" value="20">
+          <div class="hint" id="altHint"></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="tt4">Combustion temperature</label><output id="tt4Out"></output></div>
+          <input type="range" id="tt4" min="1400" max="2400" step="10" value="2200">
+          <div class="hint">Gas temperature leaving the combustor. More fuel means hotter gas and more thrust, up to the point where all the oxygen is used.</div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label>Intake type</label></div>
+          <div class="seg" role="group" aria-label="Intake type">
+            <button type="button" data-mode="pitot" aria-pressed="false">Pitot</button>
+            <button type="button" data-mode="spike" aria-pressed="false">Spike</button>
+            <button type="button" data-mode="multi" aria-pressed="true">Multi-shock</button>
+          </div>
+          <div class="hint" id="modeHint"></div>
+        </div>
+        <div class="ctrl no-print">
+          <div class="ctrl-head"><label>Try a condition</label></div>
+          <div class="presets">
+            <button type="button" data-p="0,0,2000,multi">Standing still</button>
+            <button type="button" data-p="0.8,8,2000,multi">Subsonic</button>
+            <button type="button" data-p="3,20,2200,multi">Sweet spot</button>
+            <button type="button" data-p="3,20,2200,pitot">Pitot at Mach 3</button>
+            <button type="button" data-p="5.8,28,2000,multi">Too hot</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="message" id="message"></div>
+        <div class="kpis">
+          <div class="kpi"><div><span class="v" id="kFs">–</span><span class="u">N·s/kg</span></div><div class="l">Thrust per kg/s of air</div></div>
+          <div class="kpi"><div><span class="v" id="kIsp">–</span><span class="u">s</span></div><div class="l">Specific impulse (fuel efficiency)</div></div>
+          <div class="kpi"><div><span class="v" id="kF">–</span><span class="u">%</span></div><div class="l">Fuel / air by mass</div></div>
+          <div class="kpi"><div><span class="v" id="kRec">–</span><span class="u">%</span></div><div class="l">Intake pressure kept</div></div>
+        </div>
+        <div class="panel" style="padding:8px 8px 4px">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Station</th><th>Mach</th><th>Speed m/s</th><th>Temp K</th><th>Pressure kPa</th><th>Total press. kPa</th></tr></thead>
+              <tbody id="stations"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="effs">
+          <div class="bar"><div><b>Thermal</b> <span id="eTh"></span></div><div class="track"><div class="fill" id="fTh"></div></div></div>
+          <div class="bar"><div><b>Propulsive</b> <span id="eP"></span></div><div class="track"><div class="fill" id="fP"></div></div></div>
+          <div class="bar"><div><b>Overall</b> <span id="eO"></span></div><div class="track"><div class="fill" id="fO"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PARTS ===================== -->
+  <section id="parts">
+    <div class="kicker">Front to back</div>
+    <h2>The four parts of the engine</h2>
+    <p class="muted" style="max-width:720px">Engineers number positions along an engine as <em>stations</em>. Here 0 is the undisturbed air ahead, 2 is the start of the combustor, 4 is the end of the combustor and 9 is the nozzle exit. Click a card to highlight that part in the cutaway.</p>
+    <div class="parts" style="margin-top:18px">
+      <div class="part" data-region="0" tabindex="0">
+        <div class="num">1 · Intake</div>
+        <h3>Catch the air</h3>
+        <p>Above Mach 1 the air can't "hear" the engine coming, so it doesn't move aside smoothly. Instead it is slowed abruptly by shock waves. Each shock raises the pressure but also wastes some of the air's energy.</p>
+        <p>A single strong shock (pitot intake) wastes a lot. A pointed spike splits the job into a weaker angled shock plus a final normal shock, which wastes much less.</p>
+      </div>
+      <div class="part" data-region="1" tabindex="0">
+        <div class="num">2 · Diffuser</div>
+        <h3>Slow it down</h3>
+        <p>Behind the shocks, the air is subsonic. The duct now widens, and in subsonic flow a widening duct slows the air further and raises its pressure.</p>
+        <p>By the combustor the air moves at only about a quarter of the local speed of sound. It is now compressed and has been heated by the compression alone.</p>
+      </div>
+      <div class="part" data-region="2" tabindex="0">
+        <div class="num">3 · Combustor</div>
+        <h3>Add heat</h3>
+        <p>Fuel is sprayed in and burned. A flame in a fast stream blows out, much like a match in a gale, so <em>flame holders</em> are placed in the flow. These are V-shaped gutters that leave a sheltered pocket of slow, swirling gas behind them where the flame can anchor.</p>
+        <p>The gas leaves several times hotter, and so takes up several times more volume, and it speeds up.</p>
+      </div>
+      <div class="part" data-region="3" tabindex="0">
+        <div class="num">4 · Nozzle</div>
+        <h3>Turn heat into speed</h3>
+        <p>The duct narrows to a throat, where the gas reaches exactly Mach 1, then widens again so the gas keeps accelerating as its pressure drops. This is a converging–diverging nozzle.</p>
+        <p>Thrust is the difference between the momentum leaving and the momentum entering. The hot jet leaves much faster than the air arrived.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIMITS ===================== -->
+  <section id="limits">
+    <div class="kicker">Where it works, and where it doesn't</div>
+    <h2>A ramjet only works within a range of speeds</h2>
+    <div class="two" style="margin-top:18px">
+      <div class="card">
+        <h3>Too slow: no squeeze</h3>
+        <p>All of a ramjet's compression comes from its own speed. Standing still, the air inside is at the same pressure as the air outside, so burning fuel just makes hot gas that has no pressure to push it out fast. The engine makes no thrust when it isn't moving.</p>
+        <p>The ram pressure rises steeply with speed. At Mach 1 the air can be squeezed to about 1.9 times outside pressure. At Mach 3 the ideal figure is about 37 times. That is why ramjets usually come to life somewhere above Mach 1, and why every ramjet needs something else to get it moving. Historically, research ramjet aircraft were carried aloft by a mothership or were paired with a turbojet.</p>
+        <button class="try" type="button" data-p="0.3,0,2000,multi">Try Mach 0.3</button>
+      </div>
+      <div class="card">
+        <h3>Too fast: too hot to burn</h3>
+        <p>Slowing air down heats it. At Mach 5 the air reaching the combustor is already over 1,200 K before any fuel is burned. At Mach 6 it is close to 1,800 K. There is less and less room to add heat before the gas hits material and chemistry limits, so thrust per kilogram of air falls.</p>
+        <p>The answer is to stop slowing the air to subsonic speed and burn the fuel in a supersonic stream. That engine is a <em>scramjet</em> (supersonic-combustion ramjet), and it is a much harder problem.</p>
+        <button class="try" type="button" data-p="5.8,28,2000,multi">Try Mach 5.8</button>
+      </div>
+    </div>
+
+    <div class="two" style="margin-top:20px">
+      <div class="card">
+        <h3>Thrust per kilogram of air vs Mach</h3>
+        <p class="small muted">At the current altitude, combustion temperature and intake. The dot is your setting.</p>
+        <svg class="chart" id="chartFs" viewBox="0 0 480 260" role="img" aria-label="Chart of specific thrust against Mach number"></svg>
+      </div>
+      <div class="card">
+        <h3>Fuel efficiency (specific impulse) vs Mach</h3>
+        <p class="small muted">Seconds of 1 newton of thrust per newton of fuel weight burned. Higher is better.</p>
+        <svg class="chart" id="chartIsp" viewBox="0 0 480 260" role="img" aria-label="Chart of specific impulse against Mach number"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SHOCKS ===================== -->
+  <section id="shocks">
+    <div class="kicker">The intake is the whole game</div>
+    <h2>Why more shocks are better than one</h2>
+    <div class="two" style="margin-top:18px">
+      <div class="card">
+        <p>Every shock wave turns some of the air's useful pressure into wasted heat. The loss rises steeply with the Mach number the shock sees. One shock at Mach 3 keeps only about a third of the available pressure. Two weaker shocks that each see a lower Mach number lose far less in total.</p>
+        <p>That's why fast intakes use a cone or a ramp: each surface bend creates a weaker angled shock. Good designs arrange for these shocks to meet right at the intake lip so no air spills around it. The best designs approach the ideal of an almost continuous, gentle compression.</p>
+        <p>The spike in this model is designed for one Mach number. Away from it, the angled shock either falls inside the lip or swings out ahead of it, and below a certain Mach number it detaches into a curved bow shock.</p>
+      </div>
+      <div class="card">
+        <h3>Pressure kept by each intake type</h3>
+        <svg class="chart" id="chartRec" viewBox="0 0 480 260" role="img" aria-label="Chart of intake pressure recovery against Mach number for three intake types"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HISTORY ===================== -->
+  <section id="history">
+    <div class="kicker">A short history</div>
+    <h2>Old idea, hard engineering</h2>
+    <ul class="timeline" style="margin-top:14px">
+      <li><div class="yr">1913</div><p><b>René Lorin</b>, a French engineer, describes the ramjet principle. The aircraft of his day were far too slow for it to work.</p></li>
+      <li><div class="yr">1949</div><p><b>Leduc 0.10.</b> René Leduc's research aircraft, carried up on top of a larger mothership and released, makes one of the first flights powered by a ramjet. Its pilot sat inside the engine's central body.</p></li>
+      <li><div class="yr">1959</div><p><b>Nord 1500 Griffon II.</b> This French research aircraft combines a turbojet for take-off with a large ramjet around it for high speed. It sets a speed record over a 100 km closed course.</p></li>
+      <li><div class="yr">1960s</div><p><b>Combined-cycle engines.</b> High-speed aircraft engines are designed so that at top speed much of the air bypasses the turbine machinery, and the engine behaves partly like a ramjet.</p></li>
+      <li><div class="yr">2000s</div><p><b>Scramjet research flights</b> such as NASA's X-43A show that supersonic combustion can produce thrust in flight above Mach 6.</p></li>
+    </ul>
+  </section>
+
+  <!-- ===================== MODEL ===================== -->
+  <section id="model">
+    <div class="kicker">Under the hood</div>
+    <h2>The model behind the numbers</h2>
+    <p class="muted" style="max-width:760px">This is a standard one-dimensional textbook cycle analysis, the kind used in a first propulsion course. It treats the flow as uniform at each station and uses fixed loss factors. It is good for understanding trends and rough magnitudes. It is not a design tool.</p>
+    <div class="eq" style="margin-top:14px">
+<span class="c">// Atmosphere: International Standard Atmosphere, 0–32 km</span><br>
+V₀ = M₀·√(γRT₀) &nbsp;&nbsp; T<sub>t0</sub> = T₀(1 + ½(γ−1)M₀²) &nbsp;&nbsp; p<sub>t0</sub> = p₀(1 + ½(γ−1)M₀²)<sup>γ/(γ−1)</sup><br>
+<span class="c">// Intake: shock losses × 0.97 subsonic diffuser loss</span><br>
+p<sub>t2</sub> = p<sub>t0</sub> · π<sub>shocks</sub> · 0.97 &nbsp;&nbsp; <span class="c">(pitot: one normal shock · spike: 16.7° oblique + normal · multi: MIL-E-5008B curve)</span><br>
+<span class="c">// Combustor: energy balance, 98% burning efficiency, 5% pressure loss</span><br>
+f = (c<sub>p,t</sub>T<sub>t4</sub> − c<sub>p,c</sub>T<sub>t2</sub>) / (η<sub>b</sub>h − c<sub>p,t</sub>T<sub>t4</sub>) &nbsp;&nbsp; <span class="c">h = 42.8 MJ/kg (kerosene-type), capped at stoichiometric f = 0.068</span><br>
+<span class="c">// Nozzle: 2% loss, expanded to ambient pressure</span><br>
+M₉ = √( 2/(γ<sub>t</sub>−1) · [ (p<sub>t9</sub>/p₀)<sup>(γ<sub>t</sub>−1)/γ<sub>t</sub></sup> − 1 ] ) &nbsp;&nbsp; V₉ = M₉·√(γ<sub>t</sub>R<sub>t</sub>T₉)<br>
+<span class="c">// Performance</span><br>
+F/ṁ₀ = (1+f)V₉ − V₀ &nbsp;&nbsp; I<sub>sp</sub> = (F/ṁ₀) / (f·g₀) &nbsp;&nbsp; η<sub>overall</sub> = V₀·(F/ṁ₀) / (f·h)
+    </div>
+    <p class="small muted" style="margin-top:12px">Cold air: γ = 1.40, c<sub>p</sub> = 1004.5 J/kg·K. Hot gas: γ = 1.30, c<sub>p</sub> = 1239 J/kg·K. The combustor is entered at Mach 0.25. Station 4 speed is estimated from mass conservation in a constant-area burner. The nozzle drawn is the ideal shape for the current condition; a real fixed-geometry nozzle would only match this at one point.</p>
+  </section>
+
+  <!-- ===================== GLOSSARY ===================== -->
+  <section id="glossary">
+    <div class="kicker">Words used here</div>
+    <h2>Glossary</h2>
+    <dl class="gloss" style="margin-top:14px">
+      <dt>Mach number</dt><dd>Speed divided by the local speed of sound. The speed of sound falls with temperature, so Mach 1 is about 340 m/s at sea level and 295 m/s at 11–20 km.</dd>
+      <dt>Static vs total pressure</dt><dd>Static pressure is what you'd feel moving with the air. Total pressure is what you'd get if you brought the air to rest without losses. It is the "squeeze budget" the intake has to work with.</dd>
+      <dt>Pressure recovery</dt><dd>The fraction of total pressure that survives the intake. Every percent lost is thrust lost.</dd>
+      <dt>Shock wave</dt><dd>A very thin layer where supersonic flow abruptly slows, compresses and heats. A normal shock stands straight across the flow; an oblique shock is angled and weaker.</dd>
+      <dt>Flame holder</dt><dd>A blunt object, often V-shaped, that leaves a sheltered wake where the flame can stay lit in a fast stream.</dd>
+      <dt>Throat</dt><dd>The narrowest point of the nozzle. When the nozzle is "choked", the gas there travels at exactly Mach 1.</dd>
+      <dt>Fuel–air ratio</dt><dd>Mass of fuel per mass of air. Stoichiometric (about 6.8% for kerosene) burns all the oxygen; beyond it extra fuel can't burn.</dd>
+      <dt>Specific impulse</dt><dd>Thrust divided by the weight of fuel burned per second, in seconds. It measures how efficiently an engine uses its fuel.</dd>
+      <dt>Scramjet</dt><dd>A ramjet in which the air stays supersonic through the combustor, used at speeds where slowing the air would make it too hot.</dd>
+    </dl>
+  </section>
+
+  <footer>Educational explainer. All figures come from an idealised textbook model and are meant to show trends, not to describe any real engine.</footer>
+</div>
+
+<script>
+(() => {
+// ---------- constants ----------
+const G = 1.4, Rc = 287.05, cpc = 1004.5;
+const Gt = 1.30, cpt = 1239, Rt = cpt * (Gt - 1) / Gt;
+const hPR = 42.8e6, etaB = 0.98, fSt = 0.068, g0 = 9.80665;
+const PI_DIFF = 0.97, PI_B = 0.95, PI_N = 0.98, M2 = 0.25;
+const THETA = Math.atan(42 / 140); // spike half-angle used by the 'spike' intake
+
+const state = { M: 3, h: 20, Tt4: 2200, mode: 'multi', region: -1, hover: -1 };
+let R = null; // latest results
+
+// ---------- atmosphere ----------
+function isa(hm) {
+  let T, p;
+  if (hm <= 11000) { T = 288.15 - 0.0065 * hm; p = 101325 * Math.pow(T / 288.15, 5.25588); }
+  else if (hm <= 20000) { T = 216.65; p = 22632.06 * Math.exp(-(hm - 11000) / 6341.62); }
+  else { T = 216.65 + 0.001 * (hm - 20000); p = 5474.89 * Math.pow(T / 216.65, -34.1632); }
+  return { T, p, a: Math.sqrt(G * Rc * T) };
+}
+
+// ---------- shock relations ----------
+function nsPt(M) {
+  if (M <= 1) return 1;
+  const a = ((G + 1) * M * M) / ((G - 1) * M * M + 2);
+  const b = (G + 1) / (2 * G * M * M - (G - 1));
+  return Math.pow(a, G / (G - 1)) * Math.pow(b, 1 / (G - 1));
+}
+function nsM2(M) { return Math.sqrt(((G - 1) * M * M + 2) / (2 * G * M * M - (G - 1))); }
+function obliqueBeta(M, theta) {
+  if (M <= 1) return null;
+  const mu = Math.asin(1 / M);
+  let prev = -1;
+  for (let i = 1; i <= 3000; i++) {
+    const b = mu + (Math.PI / 2 - mu) * i / 3000;
+    const th = Math.atan(2 / Math.tan(b) * (M * M * Math.sin(b) ** 2 - 1) / (M * M * (G + Math.cos(2 * b)) + 2));
+    if (th >= theta) return b;
+    if (th < prev) return null; // passed max deflection: detached
+    prev = th;
+  }
+  return null;
+}
+function intake(M, mode) {
+  if (M <= 1) return { rec: 1 };
+  if (mode === 'pitot') return { rec: nsPt(M) };
+  if (mode === 'spike') {
+    const b = obliqueBeta(M, THETA);
+    if (!b) return { rec: nsPt(M), detached: true };
+    const Mn = M * Math.sin(b);
+    const Ma = nsM2(Mn) / Math.sin(b - THETA);
+    return { rec: nsPt(Mn) * nsPt(Ma), beta: b };
+  }
+  return { rec: M <= 5 ? 1 - 0.075 * Math.pow(M - 1, 1.35) : 800 / (M ** 4 + 935) };
+}
+function areaRatio(M, g) {
+  return (1 / M) * Math.pow((2 / (g + 1)) * (1 + (g - 1) / 2 * M * M), (g + 1) / (2 * (g - 1)));
+}
+
+// ---------- cycle ----------
+function compute(M, hkm, Tt4set, mode) {
+  const A = isa(hkm * 1000);
+  const T0 = A.T, p0 = A.p, V0 = M * A.a;
+  const k0 = 1 + 0.2 * M * M;
+  const Tt0 = T0 * k0, Pt0 = p0 * Math.pow(k0, 3.5);
+  const ik = intake(M, mode);
+  const rec = ik.rec * PI_DIFF;
+  const Pt2 = Pt0 * rec, Tt2 = Tt0;
+  const k2 = 1 + 0.2 * M2 * M2;
+  const T2 = Tt2 / k2, p2 = Pt2 / Math.pow(k2, 3.5), V2 = M2 * Math.sqrt(G * Rc * T2);
+
+  let Tt4 = Tt4set, limit = null;
+  let f = (cpt * Tt4 - cpc * Tt2) / (etaB * hPR - cpt * Tt4);
+  if (f > fSt) { f = fSt; Tt4 = (cpc * Tt2 + f * etaB * hPR) / ((1 + f) * cpt); limit = 'rich'; }
+  if (f < 0.002) { f = 0; Tt4 = Tt2 * cpc / cpt; limit = 'hot'; }
+
+  const Pt4 = Pt2 * PI_B, Pt9 = Pt4 * PI_N;
+  const PR = Pt9 / p0;
+  let M9 = 0, T9 = Tt4, V9 = 0;
+  if (PR > 1) {
+    M9 = Math.sqrt(2 / (Gt - 1) * (Math.pow(PR, (Gt - 1) / Gt) - 1));
+    T9 = Tt4 / (1 + (Gt - 1) / 2 * M9 * M9);
+    V9 = M9 * Math.sqrt(Gt * Rt * T9);
+  }
+  const choked = M9 >= 1;
+  const AR = choked ? areaRatio(M9, Gt) : 1;
+  const Mth = choked ? 1 : M9;
+  const Tth = Tt4 / (1 + (Gt - 1) / 2 * Mth * Mth);
+  const Vth = Mth * Math.sqrt(Gt * Rt * Tth);
+
+  // station 4: constant-area burner, continuity with p4 ≈ p2·π_b
+  let V4 = V2, T4 = Tt4;
+  for (let i = 0; i < 6; i++) { T4 = Tt4 - V4 * V4 / (2 * cpt); V4 = (1 + f) * V2 * (T4 / T2) / PI_B; }
+  T4 = Tt4 - V4 * V4 / (2 * cpt);
+  let M4 = V4 / Math.sqrt(Gt * Rt * T4);
+  if (M4 > 0.95) { M4 = 0.95; T4 = Tt4 / (1 + (Gt - 1) / 2 * M4 * M4); V4 = M4 * Math.sqrt(Gt * Rt * T4); }
+  const p4 = Pt4 / Math.pow(1 + (Gt - 1) / 2 * M4 * M4, Gt / (Gt - 1));
+
+  const Fs = (1 + f) * V9 - V0;
+  const Isp = f > 0 && Fs > 0 ? Fs / (f * g0) : 0;
+  const ke = (1 + f) * V9 * V9 - V0 * V0;
+  const etaTh = f > 0 ? Math.max(0, ke / (2 * f * hPR)) : 0;
+  const etaP = V0 > 0 && ke > 0 && Fs > 0 ? 2 * V0 * Fs / ke : 0;
+  const etaO = f > 0 && Fs > 0 ? V0 * Fs / (f * hPR) : 0;
+
+  return { M, T0, p0, V0, Tt0, Pt0, rec, ik, Pt2, Tt2, T2, p2, V2, f, Tt4, limit, Pt4, T4, p4, V4, M4,
+           Pt9, PR, M9, T9, V9, choked, AR, Tth, Vth, Fs, Isp, etaTh, etaP, etaO };
+}
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 0) => Number.isFinite(v) ? v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : '–';
+
+const MODE_HINT = {
+  pitot: 'A plain open tube. Above Mach 1 a single normal shock stands in front of it. It is simple, but the losses grow fast beyond about Mach 1.6.',
+  spike: 'A cone with a 16.7° half-angle makes one oblique shock, then a normal shock finishes the job. It works well near its design speed.',
+  multi: 'A well-designed intake with several shocks, following the standard military reference curve (MIL-E-5008B) for good supersonic intakes.'
+};
+
+function update() {
+  R = compute(state.M, state.h, state.Tt4, state.mode);
+  $('machOut').textContent = 'M ' + state.M.toFixed(2);
+  $('machHint').textContent = `${fmt(R.V0)} m/s · ${fmt(R.V0 * 3.6)} km/h · ram heating: ${fmt(R.Tt0)} K`;
+  $('altOut').textContent = state.h.toFixed(1) + ' km';
+  $('altHint').textContent = `Air: ${fmt(R.T0)} K, ${fmt(R.p0 / 1000, 1)} kPa (${fmt(R.p0 / 101325 * 100, 0)}% of sea level)`;
+  $('tt4Out').textContent = fmt(state.Tt4) + ' K';
+  $('modeHint').textContent = MODE_HINT[state.mode];
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === state.mode));
+
+  const good = R.Fs > 0;
+  $('kFs').textContent = good ? fmt(R.Fs) : '0';
+  $('kIsp').textContent = good ? fmt(R.Isp) : '–';
+  $('kF').textContent = fmt(R.f * 100, 2);
+  $('kRec').textContent = fmt(R.rec * 100, 0);
+
+  const rows = [
+    ['0', 'Free stream', R.M, R.V0, R.T0, R.p0, R.Pt0],
+    ['2', 'Combustor entry', M2, R.V2, R.T2, R.p2, R.Pt2],
+    ['4', 'Combustor exit', R.M4, R.V4, R.T4, R.p4, R.Pt4],
+    ['9', 'Nozzle exit', R.M9, R.V9, R.T9, R.p0, R.Pt9]
+  ];
+  $('stations').innerHTML = rows.map(r =>
+    `<tr><td><span class="st">${r[0]}</span>${r[1]}</td><td>${fmt(r[2], 2)}</td><td>${fmt(r[3])}</td><td>${fmt(r[4])}</td><td>${fmt(r[5] / 1000, 1)}</td><td>${fmt(r[6] / 1000, 1)}</td></tr>`
+  ).join('');
+
+  const bars = [['eTh', 'fTh', R.etaTh], ['eP', 'fP', R.etaP], ['eO', 'fO', R.etaO]];
+  bars.forEach(([t, b, v]) => { $(t).textContent = fmt(v * 100, 0) + '%'; $(b).style.width = Math.min(100, v * 100) + '%'; });
+
+  // message + status pills
+  let msg, pills = [];
+  if (state.M < 0.05) {
+    msg = '<b>Standing still.</b> There is no ram compression, so the gas inside is at outside pressure and has nothing to push it out. The thrust is zero.';
+    pills.push(['warn', 'No thrust']);
+  } else if (R.limit === 'hot') {
+    msg = `<b>Too hot to add heat.</b> The air reaches the combustor at ${fmt(R.Tt2)} K, already near the chosen combustion temperature. Losses now outweigh the heat you can add.`;
+    pills.push(['warn', 'Combustion not possible']);
+  } else if (!good) {
+    msg = '<b>Net drag.</b> The engine is losing more momentum than it adds. Try a higher speed or a hotter combustor.';
+    pills.push(['warn', 'Net drag']);
+  } else if (state.M < 1) {
+    msg = `<b>Subsonic.</b> The ram squeeze is only ${fmt(R.Pt2 / R.p0, 2)}× outside pressure, so the jet leaves at just ${fmt(R.V9)} m/s. It works, but poorly. This is why ramjets are not used at these speeds.`;
+    pills.push(['info', 'Weak compression']);
+  } else if (R.Tt2 > 1100) {
+    msg = `<b>Near the top of the range.</b> The intake alone heats the air to ${fmt(R.Tt2)} K, so there is little room left to add heat. Beyond here, scramjets take over.`;
+    pills.push(['warn', 'Running out of headroom']);
+  } else {
+    msg = `<b>Working well.</b> The intake squeezes the air to ${fmt(R.Pt2 / R.p0, 1)}× outside pressure. Burning ${fmt(R.f * 100, 1)}% fuel by mass sends the jet out at ${fmt(R.V9)} m/s against ${fmt(R.V0)} m/s coming in.`;
+    pills.push(['good', 'Producing thrust']);
+  }
+  if (R.limit === 'rich') pills.push(['info', `All oxygen used: capped at ${fmt(R.Tt4)} K`]);
+  if (R.ik.detached) pills.push(['info', 'Shock detached from spike']);
+  if (state.M > 1) pills.push(['', `Intake keeps ${fmt(R.rec * 100)}% of total pressure`]);
+  $('message').innerHTML = msg;
+  $('status').innerHTML = pills.map(([c, t]) => `<span class="pill ${c}">${t}</span>`).join('');
+
+  drawCharts();
+}
+
+// ---------- charts ----------
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function lineChart(svg, series, opts) {
+  const W = 480, H = 260, L = 52, Rr = 14, T = 14, B = 36;
+  const xmax = 6, ymax = opts.ymax;
+  const X = m => L + (W - L - Rr) * m / xmax, Y = v => T + (H - T - B) * (1 - v / ymax);
+  let s = '';
+  const grid = css('--line'), ink = css('--ink-3');
+  for (let i = 0; i <= 4; i++) {
+    const v = ymax * i / 4, y = Y(v);
+    s += `<line x1="${L}" x2="${W - Rr}" y1="${y}" y2="${y}" stroke="${grid}"/>`;
+    s += `<text x="${L - 8}" y="${y + 4}" text-anchor="end">${opts.yfmt(v)}</text>`;
+  }
+  for (let m = 0; m <= 6; m++) s += `<text x="${X(m)}" y="${H - B + 18}" text-anchor="middle">${m}</text>`;
+  s += `<text x="${(L + W - Rr) / 2}" y="${H - 4}" text-anchor="middle">Flight Mach number</text>`;
+  series.forEach(se => {
+    let d = '', pen = false;
+    se.pts.forEach(([m, v]) => {
+      if (v == null || !(v > 0)) { pen = false; return; }
+      d += (pen ? 'L' : 'M') + X(m).toFixed(1) + ' ' + Y(Math.min(v, ymax)).toFixed(1) + ' ';
+      pen = true;
+    });
+    s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="${se.w || 2.5}" stroke-linejoin="round" stroke-linecap="round" ${se.dash ? 'stroke-dasharray="5 4"' : ''}/>`;
+    if (se.label) {
+      const last = se.pts.filter(p => p[1] > 0).at(-1);
+      if (last) s += `<text x="${X(last[0]) - 4}" y="${Y(Math.min(last[1], ymax)) - 8}" text-anchor="end" style="fill:${se.color};font-weight:600">${se.label}</text>`;
+    }
+  });
+  if (opts.marker && opts.marker[1] > 0) {
+    const [m, v] = opts.marker;
+    s += `<circle cx="${X(m)}" cy="${Y(Math.min(v, ymax))}" r="7" fill="${css('--accent')}" stroke="${css('--surface')}" stroke-width="3"/>`;
+  }
+  svg.innerHTML = s;
+}
+function niceMax(v) { const p = Math.pow(10, Math.floor(Math.log10(v))); return Math.ceil(v / p * 2) / 2 * p; }
+function drawCharts() {
+  const pts = [];
+  for (let m = 0.1; m <= 6.0001; m += 0.05) pts.push([m, compute(m, state.h, state.Tt4, state.mode)]);
+  const fs = pts.map(([m, r]) => [m, r.Fs > 0 ? r.Fs : null]);
+  const isp = pts.map(([m, r]) => [m, r.Fs > 0 ? r.Isp : null]);
+  const acc = css('--accent');
+  lineChart($('chartFs'), [{ pts: fs, color: acc }], { ymax: niceMax(Math.max(200, ...fs.map(p => p[1] || 0))), yfmt: v => fmt(v), marker: [state.M, R.Fs] });
+  lineChart($('chartIsp'), [{ pts: isp, color: css('--cool') }], { ymax: niceMax(Math.max(200, ...isp.map(p => p[1] || 0))), yfmt: v => fmt(v), marker: [state.M, R.Isp] });
+  const rec = ['pitot', 'spike', 'multi'].map(md => pts.map(([m]) => [m, intake(m, md).rec * PI_DIFF]));
+  lineChart($('chartRec'), [
+    { pts: rec[0], color: css('--warn'), label: 'Pitot' },
+    { pts: rec[1], color: css('--cool'), label: 'Spike' },
+    { pts: rec[2], color: css('--good'), label: 'Multi-shock' }
+  ], { ymax: 1, yfmt: v => Math.round(v * 100) + '%', marker: [state.M, R.rec] });
+}
+
+// ---------- engine canvas ----------
+const cv = $('engine'), ctx = cv.getContext('2d');
+const CY = 160, LIP = 175, XC0 = 340, XC1 = 700, XT = 790, XE = 905, RT = 52;
+const REGIONS = [[0, 235, 'INTAKE'], [235, XC0, 'DIFFUSER'], [XC0, XC1, 'COMBUSTOR'], [XC1, XE, 'NOZZLE']];
+const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+let RE = RT;
+
+function spikeR(x) {
+  if (state.mode === 'pitot') {
+    if (x < 250) return 0;
+    if (x < 262) return 26 * Math.sqrt((x - 250) / 12);
+    return 26 * (1 - smooth((x - 262) / 68));
+  }
+  if (state.mode === 'multi') {
+    if (x < 70) return 0;
+    if (x < 140) return 20 * (x - 70) / 70;
+    if (x < 210) return 20 + 22 * (x - 140) / 70;
+    return 42 * (1 - smooth((x - 210) / 120));
+  }
+  if (x < 70) return 0;
+  if (x < 210) return 42 * (x - 70) / 140;
+  return 42 * (1 - smooth((x - 210) / 120));
+}
+function ductR(x) {
+  if (x < LIP) return 62;
+  if (x < XC0) return 62 + 28 * smooth((x - LIP) / (XC0 - LIP));
+  if (x < XC1) return 90;
+  if (x < XT) return lerp(90, RT, smooth((x - XC1) / (XT - XC1)));
+  if (x <= XE) return lerp(RT, RE, (x - XT) / (XE - XT));
+  return RE + (x - XE) * 0.12;
+}
+function skinR(x) {
+  if (x < 300) return lerp(64, 108, smooth((x - LIP) / (300 - LIP)));
+  if (x < XC1) return 108;
+  return lerp(108, RE + 7, (x - XC1) / (XE - XC1));
+}
+
+// flow profile: [x, V, T]
+let profile = [];
+function buildProfile() {
+  const shockX = state.M > 1 ? (state.mode === 'pitot' ? 160 : 235) : LIP;
+  // between oblique shock and terminal shock, flow is still fast; approximate with freestream
+  profile = [[0, R.V0, R.T0], [shockX, R.V0, R.T0 * (state.M > 1 && state.mode !== 'pitot' ? 1.15 : 1)],
+    [XC0, R.V2, R.T2], [430, R.V2, R.T2], [XC1, R.V4, R.T4], [XT, R.Vth, R.Tth], [XE, R.V9, R.T9], [1000, R.V9 * 0.97, R.T9]];
+  if (state.M > 1) profile.splice(2, 0, [shockX + 6, lerp(R.V0, R.V2, 0.55), lerp(R.T0, R.T2, 0.8)]);
+}
+function flowAt(x) {
+  for (let i = 1; i < profile.length; i++) {
+    if (x <= profile[i][0]) {
+      const a = profile[i - 1], b = profile[i], t = (x - a[0]) / Math.max(1e-6, b[0] - a[0]);
+      return [lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+    }
+  }
+  const l = profile.at(-1); return [l[1], l[2]];
+}
+function tempColor(T, a = 1) {
+  const stops = [[200, [77, 171, 247]], [450, [116, 192, 252]], [800, [255, 146, 43]], [1500, [255, 107, 0]], [2000, [255, 212, 59]], [2500, [255, 249, 219]]];
+  let c = stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (T <= stops[i][0]) { const t = (T - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]); c = stops[i - 1][1].map((v, k) => v + (stops[i][1][k] - v) * Math.max(0, t)); break; }
+    c = stops[i][1];
+  }
+  return `rgba(${c.map(Math.round).join(',')},${a})`;
+}
+
+const parts = [];
+const NP = 340;
+function spawn(p, x) {
+  p.x = x; p.u = 0.06 + Math.random() * 0.88; p.side = Math.random() < 0.5 ? -1 : 1;
+  p.ext = Math.random() < 0.18; p.ey = 118 + Math.random() * 40;
+}
+for (let i = 0; i < NP; i++) { const p = {}; spawn(p, Math.random() * 1000); parts.push(p); }
+
+let dpr = 1, scale = 1;
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = w * 320 / 1000;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  scale = w / 1000;
+}
+window.addEventListener('resize', resize);
+
+function wallPath(sign) {
+  ctx.beginPath();
+  for (let x = LIP; x <= XE; x += 3) ctx.lineTo(x, CY - sign * ductR(x));
+  for (let x = XE; x >= LIP; x -= 3) ctx.lineTo(x, CY - sign * skinR(x));
+  ctx.closePath();
+}
+function drawShockLine(x1, y1, x2, y2) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2; ctx.shadowColor = 'rgba(165,216,255,0.9)'; ctx.shadowBlur = 8;
+  [1, -1].forEach(s => { ctx.beginPath(); ctx.moveTo(x1, CY + s * (y1 - CY)); ctx.lineTo(x2, CY + s * (y2 - CY)); ctx.stroke(); });
+  ctx.restore();
+}
+function drawShocks() {
+  if (state.M <= 1) return;
+  ctx.save();
+  if (state.mode === 'pitot') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2.2; ctx.shadowColor = 'rgba(165,216,255,0.9)'; ctx.shadowBlur = 10;
+    const bend = 30 / state.M;
+    ctx.beginPath(); ctx.moveTo(LIP - 4 - bend, CY - 78); ctx.quadraticCurveTo(LIP - 22, CY, LIP - 4 - bend, CY + 78); ctx.stroke();
+  } else if (state.mode === 'spike') {
+    const b = R.ik.beta;
+    if (!b) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2; ctx.shadowColor = 'rgba(165,216,255,0.9)'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(150, CY - 80); ctx.quadraticCurveTo(48, CY, 150, CY + 80); ctx.stroke();
+    } else {
+      const reach = 70;
+      drawShockLine(70, CY, 70 + reach / Math.tan(b), CY - reach);
+    }
+  } else {
+    drawShockLine(70, CY, LIP, CY - 62);
+    drawShockLine(140, CY - 20, LIP, CY - 62);
+  }
+  ctx.restore();
+  if (state.mode !== 'pitot') {
+    const x = 236;
+    ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2; ctx.shadowColor = 'rgba(165,216,255,0.9)'; ctx.shadowBlur = 8;
+    [1, -1].forEach(s => { ctx.beginPath(); ctx.moveTo(x, CY - s * spikeR(x)); ctx.lineTo(x, CY - s * ductR(x)); ctx.stroke(); });
+    ctx.restore();
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!R) { requestAnimationFrame(frame); return; }
+  if (cv.width === 0) resize();
+  RE = Math.min(100, RT * Math.sqrt(R.AR));
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, 320); bg.addColorStop(0, '#101a25'); bg.addColorStop(1, '#0a0f16');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, 1000, 320);
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= 1000; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 320); ctx.stroke(); }
+  for (let y = 0; y <= 320; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1000, y); ctx.stroke(); }
+
+  // region highlight
+  const hi = state.hover >= 0 ? state.hover : state.region;
+  if (hi >= 0) { const [a, b] = REGIONS[hi]; ctx.fillStyle = 'rgba(255,122,61,0.09)'; ctx.fillRect(a, 30, b - a, 262); }
+
+  // combustor glow + plume
+  const burn = R.f / fSt;
+  if (burn > 0) {
+    const gl = ctx.createLinearGradient(420, 0, XE, 0);
+    gl.addColorStop(0, `rgba(255,120,30,${0.05 + 0.18 * burn})`); gl.addColorStop(1, `rgba(255,170,60,${0.04 + 0.1 * burn})`);
+    ctx.fillStyle = gl; ctx.fillRect(420, CY - 90, XE - 420, 180);
+  }
+  if (R.V9 > 1) {
+    const len = Math.min(95, 20 + R.V9 / 25);
+    const pg = ctx.createLinearGradient(XE, 0, XE + len, 0);
+    pg.addColorStop(0, tempColor(R.T9, 0.45)); pg.addColorStop(1, tempColor(R.T9, 0));
+    ctx.fillStyle = pg; ctx.beginPath();
+    ctx.moveTo(XE, CY - RE); ctx.quadraticCurveTo(XE + len * 0.6, CY - RE * 1.05, XE + len, CY - RE * 0.5);
+    ctx.lineTo(XE + len, CY + RE * 0.5); ctx.quadraticCurveTo(XE + len * 0.6, CY + RE * 1.05, XE, CY + RE); ctx.fill();
+  }
+
+  // flames
+  if (burn > 0) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    [30, 65].forEach(r => [-1, 1].forEach(s => {
+      const y = CY + s * r, L = 70 + 190 * burn;
+      for (let k = 0; k < 3; k++) {
+        const jit = (Math.random() - 0.5) * 6, l = L * (0.7 + Math.random() * 0.3);
+        const g = ctx.createLinearGradient(430, 0, 430 + l, 0);
+        g.addColorStop(0, `rgba(255,240,180,${0.35 * burn})`); g.addColorStop(0.4, `rgba(255,140,30,${0.25 * burn})`); g.addColorStop(1, 'rgba(255,60,0,0)');
+        ctx.fillStyle = g; ctx.beginPath();
+        ctx.moveTo(430, y - 9); ctx.quadraticCurveTo(430 + l * 0.5, y - 14 + jit, 430 + l, y + jit);
+        ctx.quadraticCurveTo(430 + l * 0.5, y + 14 + jit, 430, y + 9); ctx.fill();
+      }
+    }));
+    ctx.restore();
+  }
+
+  // particles
+  for (const p of parts) {
+    let V, T;
+    if (p.ext) { V = R.V0; T = R.T0; } else { [V, T] = flowAt(p.x); }
+    const vis = state.M < 0.05 ? 14 : 25 + 0.2 * V;
+    p.x += vis * dt;
+    if (p.x > 1000) spawn(p, -Math.random() * 30);
+    let y;
+    if (p.ext) {
+      if (p.x < LIP - 20) y = p.ey; else y = Math.max(p.ey, skinR(Math.min(XE, Math.max(LIP, p.x))) + 6 + (p.ey - 118) * 0.5);
+      y = CY - p.side * y;
+    } else {
+      const rin = p.x < XE ? spikeR(p.x) : 0, rout = ductR(p.x);
+      y = CY - p.side * (rin + p.u * (rout - rin));
+    }
+    ctx.fillStyle = tempColor(T, p.ext ? 0.35 : 0.9);
+    ctx.beginPath(); ctx.arc(p.x, y, p.ext ? 1.3 : 1.8, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // walls
+  const mg = ctx.createLinearGradient(0, CY - 110, 0, CY + 110);
+  mg.addColorStop(0, '#c9d1da'); mg.addColorStop(0.25, '#7d8894'); mg.addColorStop(0.5, '#5a6571'); mg.addColorStop(0.75, '#7d8894'); mg.addColorStop(1, '#c9d1da');
+  [1, -1].forEach(s => { wallPath(s); ctx.fillStyle = mg; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1; ctx.stroke(); });
+
+  // centerbody
+  ctx.beginPath();
+  let started = false;
+  for (let x = 60; x <= XC0; x += 2) { const r = spikeR(x); if (r <= 0 && !started) continue; if (!started) { ctx.moveTo(x, CY); started = true; } ctx.lineTo(x, CY - r); }
+  for (let x = XC0; x >= 60; x -= 2) { const r = spikeR(x); if (r > 0 || x > 60) ctx.lineTo(x, CY + r); }
+  ctx.closePath();
+  const sg = ctx.createLinearGradient(0, CY - 42, 0, CY + 42);
+  sg.addColorStop(0, '#d8dee5'); sg.addColorStop(0.5, '#6b7682'); sg.addColorStop(1, '#a3adb8');
+  ctx.fillStyle = sg; ctx.fill();
+
+  // fuel spray bar + flame holders
+  ctx.strokeStyle = '#a8b3bf'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(372, CY - 88); ctx.lineTo(372, CY + 88); ctx.stroke();
+  ctx.fillStyle = burn > 0 ? '#ffd8a8' : '#a8b3bf';
+  [-75, -48, -15, 15, 48, 75].forEach(o => { ctx.beginPath(); ctx.arc(372, CY + o, 2.6, 0, Math.PI * 2); ctx.fill(); });
+  ctx.strokeStyle = '#d0d7df'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  [30, 65].forEach(r => [-1, 1].forEach(s => { const y = CY + s * r; ctx.beginPath(); ctx.moveTo(436, y - 10); ctx.lineTo(418, y); ctx.lineTo(436, y + 10); ctx.stroke(); }));
+
+  drawShocks();
+
+  // stations
+  ctx.font = '600 12px -apple-system,Segoe UI,sans-serif'; ctx.textAlign = 'center';
+  [[40, '0'], [XC0, '2'], [XC1, '4'], [XE, '9']].forEach(([x, n]) => {
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, 44); ctx.lineTo(x, 282); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(x, 300, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0c121a'; ctx.fillText(n, x, 304);
+  });
+  ctx.font = '600 11px -apple-system,Segoe UI,sans-serif';
+  REGIONS.forEach(([a, b, name], i) => {
+    if (i === 0) return;
+    ctx.fillStyle = hi === i ? '#ffa94d' : 'rgba(255,255,255,0.45)';
+    ctx.fillText(name, (a + b) / 2, 300 + 4);
+  });
+  ctx.fillStyle = hi === 0 ? '#ffa94d' : 'rgba(255,255,255,0.45)'; ctx.fillText('INTAKE', 150, 304);
+  if (R.choked) { ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '11px -apple-system,Segoe UI,sans-serif'; ctx.fillText('throat · Mach 1', XT, CY - RT - 22 > 40 ? CY - 118 : 40); }
+
+  requestAnimationFrame(frame);
+}
+
+function regionAt(evt) {
+  const r = cv.getBoundingClientRect(); const x = (evt.clientX - r.left) / scale;
+  return REGIONS.findIndex(([a, b]) => x >= a && x < b);
+}
+cv.addEventListener('mousemove', e => { state.hover = regionAt(e); });
+cv.addEventListener('mouseleave', () => { state.hover = -1; });
+cv.addEventListener('click', e => { selectRegion(regionAt(e), true); });
+
+function selectRegion(i, scroll) {
+  state.region = i;
+  document.querySelectorAll('.part').forEach(p => p.classList.toggle('active', +p.dataset.region === i));
+  if (scroll && i >= 0) document.querySelector(`.part[data-region="${i}"]`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+document.querySelectorAll('.part').forEach(p => {
+  const go = () => { selectRegion(+p.dataset.region, false); $('lab').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  p.addEventListener('click', go);
+  p.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+});
+
+// ---------- controls ----------
+const sync = () => { $('mach').value = state.M; $('alt').value = state.h; $('tt4').value = state.Tt4; update(); buildProfile(); };
+$('mach').addEventListener('input', e => { state.M = +e.target.value; update(); buildProfile(); });
+$('alt').addEventListener('input', e => { state.h = +e.target.value; update(); buildProfile(); });
+$('tt4').addEventListener('input', e => { state.Tt4 = +e.target.value; update(); buildProfile(); });
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { state.mode = b.dataset.mode; update(); buildProfile(); }));
+document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => {
+  const [m, h, t, mode] = b.dataset.p.split(',');
+  Object.assign(state, { M: +m, h: +h, Tt4: +t, mode });
+  sync();
+  if (b.classList.contains('try')) $('lab').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
+
+// ---------- theme ----------
+const themes = ['auto', 'light', 'dark'];
+let ti = 0;
+try { const s = localStorage.getItem('ramjet-theme'); if (themes.includes(s)) ti = themes.indexOf(s); } catch (e) {}
+function applyTheme() {
+  const t = themes[ti];
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t;
+  $('themeBtn').textContent = 'Theme: ' + t;
+  try { localStorage.setItem('ramjet-theme', t); } catch (e) {}
+  if (R) drawCharts();
+}
+$('themeBtn').addEventListener('click', () => { ti = (ti + 1) % 3; applyTheme(); });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => R && drawCharts());
+applyTheme();
+
+resize();
+sync();
+requestAnimationFrame(frame);
+window.__ramjet = { compute, state };
+})();
+</script>
+</body>
+</html>

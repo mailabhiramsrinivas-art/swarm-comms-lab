@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ramjet Playground</title>
+<style>
+:root{
+  --bg:#f5f3ee; --surface:#fff; --surface-2:#eeebe4; --ink:#1a1c21; --ink-2:#474c56; --ink-3:#7a7f89;
+  --line:#dcd7cc; --accent:#d9480f; --cool:#1c7ed6; --good:#2b8a3e; --warn:#c92a2a;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111419; --surface:#181c23; --surface-2:#20252e; --ink:#eceef2; --ink-2:#b4bac5; --ink-3:#848b97;
+  --line:#2c323d; --accent:#ff7a3d; --cool:#4dabf7; --good:#51cf66; --warn:#ff6b6b; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#111419; --surface:#181c23; --surface-2:#20252e; --ink:#eceef2; --ink-2:#b4bac5; --ink-3:#848b97;
+  --line:#2c323d; --accent:#ff7a3d; --cool:#4dabf7; --good:#51cf66; --warn:#ff6b6b; color-scheme:dark;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 48px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0;flex-wrap:wrap}
+h1{font-size:clamp(24px,4vw,34px);margin:0;letter-spacing:-.01em}
+.sub{color:var(--ink-2);margin:4px 0 0}
+a{color:var(--accent)}
+.tabs{display:flex;gap:6px;margin:8px 0 14px}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);padding:8px 16px;border-radius:999px;cursor:pointer;font:600 14px var(--sans)}
+.tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+canvas{display:block;width:100%;border-radius:10px;background:#0b1020;touch-action:none}
+.ctl{margin:10px 0}
+.ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-2);margin-bottom:2px}
+.ctl label b{color:var(--ink);font-family:var(--mono);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent)}
+h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 6px}
+h3:first-child{margin-top:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px}
+.stat{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.stat span{display:block;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.stat b{font:600 17px var(--mono)}
+.status{margin-top:12px;padding:10px 12px;border-radius:10px;font-weight:600;background:var(--surface-2)}
+.status.ok{color:var(--good)} .status.bad{color:var(--warn)} .status.meh{color:var(--accent)}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.sw.on{border-color:var(--ink)}
+.btn{border:0;background:var(--accent);color:#fff;font:600 15px var(--sans);padding:10px 16px;border-radius:10px;cursor:pointer;width:100%}
+.btn.ghost{background:var(--surface-2);color:var(--ink)}
+.row{display:flex;gap:8px}
+.explain{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.explain div{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink-2)}
+.explain b{color:var(--ink);display:block}
+.goals{list-style:none;padding:0;margin:0;font-size:14px}
+.goals li{padding:4px 0;color:var(--ink-2)} .goals li.done{color:var(--good);font-weight:600}
+.goals li::before{content:"○ "} .goals li.done::before{content:"● "}
+.hint{font-size:13px;color:var(--ink-3)}
+.pad{display:none;gap:8px;margin-top:10px}
+.pad button{flex:1;padding:14px;font-size:18px}
+@media (pointer:coarse){.pad{display:flex}}
+.theme-btn{background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:999px;padding:6px 12px;cursor:pointer;font:13px var(--sans)}
+.hidden{display:none}
+footer{margin-top:24px;color:var(--ink-3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Ramjet Playground</h1>
+    <p class="sub">Watch air get squeezed, heated and pushed out, then fly your own design. <a href="index.html">Read the explainer →</a></p>
+  </div>
+  <button class="theme-btn" id="themeBtn">Toggle theme</button>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-tab="lab">Engine lab</button>
+  <button class="tab" data-tab="fly">Flight challenge</button>
+</div>
+
+<div class="grid">
+  <div>
+    <!-- LAB -->
+    <section id="lab" class="card">
+      <canvas id="labCv" height="380"></canvas>
+      <div class="stats" id="labStats"></div>
+      <div class="status" id="labStatus"></div>
+      <div class="explain">
+        <div><b>1 · Inlet</b>The cone (spike) meets the air first. Above Mach 1 it makes a shock wave, the slanted line, which starts slowing the air down.</div>
+        <div><b>2 · Diffuser</b>The duct gets wider, so the air slows down more. Slower air means higher pressure and temperature. This is the "ram" in ramjet.</div>
+        <div><b>3 · Combustor</b>Fuel burns in the squeezed air. The hot gas gets much bigger and wants to get out fast.</div>
+        <div><b>4 · Nozzle</b>The hot gas squeezes through the throat and speeds out the back faster than it came in. That difference is thrust.</div>
+      </div>
+    </section>
+
+    <!-- FLY -->
+    <section id="fly" class="card hidden">
+      <canvas id="flyCv" height="420"></canvas>
+      <div class="pad">
+        <button class="btn ghost" id="padUp">▲ Climb</button>
+        <button class="btn ghost" id="padDn">▼ Dive</button>
+      </div>
+      <div class="stats" id="flyStats"></div>
+      <div class="status" id="flyStatus">Pick a release height and speed, then press Launch.</div>
+      <p class="hint">Controls: <b>↑ / ↓</b> or <b>W / S</b> to climb or dive · <b>A / D</b> or the slider for throttle · Space to launch. A carrier aircraft lets go of your ramjet at the height you choose. Fly as far as you can before the fuel runs out, then glide down.</p>
+    </section>
+  </div>
+
+  <aside class="card">
+    <div id="labCtl">
+      <h3>Flight condition</h3>
+      <div class="ctl"><label>Altitude <b id="altV"></b></label><input id="alt" type="range" min="0" max="35" step="0.5" value="12"></div>
+      <div class="ctl"><label>Flight speed <b id="machV"></b></label><input id="mach" type="range" min="0" max="7" step="0.05" value="2.5"></div>
+    </div>
+    <div id="flyCtl" class="hidden">
+      <h3>Release from carrier</h3>
+      <div class="ctl"><label>Release altitude <b id="relAltV"></b></label><input id="relAlt" type="range" min="1" max="25" step="0.5" value="10"></div>
+      <div class="ctl"><label>Release speed <b id="relMachV"></b></label><input id="relMach" type="range" min="0.6" max="3" step="0.1" value="1.8"></div>
+      <div class="row"><button class="btn" id="launch">Launch</button><button class="btn ghost" id="reset">Reset</button></div>
+      <h3>Goals</h3>
+      <ul class="goals" id="goals"></ul>
+      <p class="hint">Best distance: <b id="best">0</b> km</p>
+    </div>
+
+    <div class="ctl"><label>Throttle (fuel) <b id="thrV"></b></label><input id="thr" type="range" min="0" max="100" value="80"></div>
+
+    <h3>Customize your ramjet</h3>
+    <div class="ctl"><label>Inlet spike length <b id="spikeV"></b></label><input id="spike" type="range" min="0.06" max="0.3" step="0.01" value="0.16"></div>
+    <div class="ctl"><label>Combustor length <b id="combV"></b></label><input id="comb" type="range" min="0.14" max="0.34" step="0.01" value="0.24"></div>
+    <div class="ctl"><label>Nozzle exit size <b id="nozV"></b></label><input id="noz" type="range" min="0.17" max="0.31" step="0.01" value="0.24"></div>
+    <div class="ctl"><label>Fuel tank <b id="fuelV"></b></label><input id="fuel" type="range" min="100" max="600" step="10" value="300"></div>
+    <div class="ctl"><label>Paint</label><div class="swatches" id="paint"></div></div>
+    <p class="hint" id="tip"></p>
+  </aside>
+</div>
+
+<footer>A teaching toy, not an engineering tool. It uses the standard atmosphere and simple textbook relations for ram compression; thrust, drag and fuel use are rough, made-up scales so the trends are easy to see.</footer>
+</div>
+
+<script>
+// ---------- theme ----------
+const root=document.documentElement;
+document.getElementById('themeBtn').onclick=()=>{
+  const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme=dark?'light':'dark';
+};
+
+// ---------- shared design state ----------
+const $=id=>document.getElementById(id);
+const PAINTS=['#e8e9ec','#d9480f','#1c7ed6','#2b8a3e','#f2c94c','#7048e8','#222831'];
+const D={spike:.16,comb:.24,noz:.24,fuel:300,thr:.8,paint:PAINTS[0]};
+const pw=$('paint');
+PAINTS.forEach((c,i)=>{const s=document.createElement('div');s.className='sw'+(i?'':' on');s.style.background=c;
+  s.onclick=()=>{D.paint=c;[...pw.children].forEach(x=>x.classList.remove('on'));s.classList.add('on');};pw.appendChild(s);});
+
+// ---------- atmosphere (standard atmosphere, 0-47 km) ----------
+function atmo(h){ // h metres
+  let T,p;
+  if(h<11000){T=288.15-0.0065*h;p=101325*Math.pow(T/288.15,5.2559);}
+  else if(h<20000){T=216.65;p=22632*Math.exp(-(h-11000)/6341.6);}
+  else {T=216.65+0.001*(h-20000);p=5474.9*Math.pow(T/216.65,-34.163);}
+  const rho=p/(287*T),a=Math.sqrt(1.4*287*T);
+  return {T,p,rho,a};
+}
+
+// ---------- toy engine model ----------
+// Ram relations are standard; the efficiencies and scales are illustrative.
+function engine(h,M,thr){
+  const A=atmo(h),V=M*A.a;
+  const tr=1+0.2*M*M, T0=A.T*tr, p0=A.p*Math.pow(tr,3.5);
+  // inlet: general recovery falls with Mach; spike length should suit the speed
+  let rec=M<=1?1:1-0.075*Math.pow(M-1,1.35); rec=Math.max(rec,0.15);
+  const spikeOpt=0.07+0.035*Math.min(M,6);
+  const spikeFit=Math.exp(-Math.pow((D.spike-spikeOpt)/0.09,2));
+  rec*=0.6+0.4*spikeFit;
+  const pc=p0*rec;
+  const combEff=0.7+0.3*(1-Math.exp(-(D.comb-0.1)*12));
+  let lit=true,why='Running: ram compression, burning and thrust.',cls='ok';
+  if(thr<0.02){lit=false;why='Fuel off. Air just flows through.';cls='meh';}
+  else if(M<0.5){lit=false;why='Too slow. A ramjet has no compressor, so it needs speed to squeeze the air. That is why it gets carried or boosted first.';cls='bad';}
+  else if(pc<15000){lit=false;why='Flameout: the air is too thin here for a stable flame. Fly lower or faster.';cls='bad';}
+  const hot=T0>1650;
+  if(hot&&lit){why='Too hot! The air is so hot from ram heating alone that adding fuel barely helps, and the metal is in trouble. This is where scramjets take over.';cls='bad';}
+  const Tb=lit?Math.min(T0+thr*1900*combEff,2400):T0;
+  // nozzle fit: faster flight wants a bigger exit
+  const nozOpt=0.18+0.022*Math.min(M,6);
+  const nozFit=Math.exp(-Math.pow((D.noz-nozOpt)/0.07,2));
+  const nozEff=0.75+0.25*nozFit;
+  const Ve=V*Math.sqrt(Tb/T0)*(lit?nozEff*(0.85+0.15*rec):0.97);
+  const Acap=0.15, mdot=A.rho*V*Acap;
+  const thrust=mdot*(Ve-V);
+  const fuelFlow=lit?mdot*0.03*thr:0;
+  if(lit&&!hot&&thrust<0){why='Running, but the exit gas is not faster than the air coming in, so there is no net push. Try a better spike or nozzle for this speed.';cls='meh';}
+  return {A,V,T0,p0,pc,rec,Tb,Ve,mdot,thrust,lit,why,cls,hot,fuelFlow,spikeFit,nozFit,spikeOpt,nozOpt};
+}
+
+// ---------- geometry (normalised: x 0..1 along the engine, r = radius) ----------
+const R_OUT=0.32,R_WALL=0.27;
+function geo(){
+  const Ls=D.spike, lip=Math.min(0.08+Ls*0.9,0.34), cs=0.44, ce=Math.min(cs+D.comb,0.8), throat=ce+(1-ce)*0.4;
+  return {Ls,lip,cs,ce,throat};
+}
+function spikeR(x,g){ if(x<0)return 0; if(x<g.Ls+0.04) return 0.15*Math.min(1,x/(g.Ls+0.04)); const e=g.cs-0.02; return x<e?0.15*(1-(x-g.Ls-0.04)/(e-g.Ls-0.04)):0;}
+function wallR(x,g){ if(x<g.throat&&x<g.ce) return R_WALL; if(x<g.throat) return R_WALL+(0.16-R_WALL)*(x-g.ce)/(g.throat-g.ce); return 0.16+(D.noz-0.16)*(x-g.throat)/(1-g.throat);}
+function outerR(x,g){ if(x<g.lip) return 0; if(x<g.lip+0.08) return R_WALL+(R_OUT-R_WALL)*(x-g.lip)/0.08; if(x>0.92) return Math.max(R_OUT-(x-0.92)*0.6,D.noz+0.02); return R_OUT;}
+
+function tempColor(t){ // t in K -> colour
+  const stops=[[200,[70,140,255]],[500,[90,220,220]],[900,[255,230,90]],[1500,[255,130,40]],[2300,[255,50,40]]];
+  if(t<=stops[0][0])return `rgb(${stops[0][1]})`;
+  for(let i=1;i<stops.length;i++){if(t<=stops[i][0]){const [a,ca]=stops[i-1],[b,cb]=stops[i],f=(t-a)/(b-a);
+    return `rgb(${ca.map((v,k)=>Math.round(v+(cb[k]-v)*f))})`;}}
+  return `rgb(${stops[4][1]})`;
+}
+
+// ---------- LAB view ----------
+const labCv=$('labCv'),lc=labCv.getContext('2d');
+let parts=[];
+function initParts(){parts=[];for(let i=0;i<420;i++)parts.push(newPart(Math.random()*1.3-0.15));}
+function newPart(x){const y=(Math.random()*2-1)*0.52;return {x,y,lane:Math.random(),inside:Math.abs(y)<R_WALL-0.01};}
+initParts();
+
+function flowAt(x,p,e,g){ // returns {v,T} at station x for in-duct particle
+  const vF=e.V, TF=e.A.T, T0=e.T0, vSlow=Math.max(vF*0.3,40);
+  if(x<g.lip) return {v:vF,T:TF};
+  if(x<g.cs){const f=(x-g.lip)/(g.cs-g.lip);return {v:vF+(vSlow-vF)*f,T:TF+(T0-TF)*f};}
+  if(x<g.ce){const f=(x-g.cs)/(g.ce-g.cs),s=f*f*(3-2*f);return {v:vSlow*(1+s*(Math.sqrt(e.Tb/T0)-1)),T:T0+(e.Tb-T0)*s};}
+  const f=(x-g.ce)/(1-g.ce),vc=vSlow*Math.sqrt(e.Tb/T0);
+  if(x<=1) return {v:vc+(Math.max(e.Ve,vc)-vc)*f,T:e.Tb-(e.Tb-e.Tb*0.65)*f};
+  return {v:Math.max(e.Ve,vF*0.5),T:e.Tb*0.65-(x-1)*400};
+}
+
+function drawLab(dt){
+  const W=labCv.width,H=labCv.height,e=engine(+$('alt').value*1000,+$('mach').value,D.thr),g=geo();
+  const S=W*0.74, SY=Math.min(S,H*1.15), cx=W*0.06, cy=H/2+H*0.03; // px per unit (x and radius)
+  const X=x=>cx+x*S, Y=r=>cy-r*SY;
+  // sky gets darker with altitude
+  const alt=+$('alt').value, k=Math.min(alt/35,1);
+  const grd=lc.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,`rgb(${40-30*k},${90-75*k},${150-120*k})`);grd.addColorStop(1,`rgb(${20-12*k},${40-30*k},${80-65*k})`);
+  lc.fillStyle=grd;lc.fillRect(0,0,W,H);
+
+  const M=+$('mach').value;
+  // shock from spike tip when supersonic
+  if(M>1){const mu=Math.asin(1/M)*1.25+0.05,len=W;
+    lc.strokeStyle='rgba(255,255,255,.55)';lc.lineWidth=2;lc.setLineDash([6,4]);
+    for(const s of[1,-1]){lc.beginPath();lc.moveTo(X(0),cy);lc.lineTo(X(0)+Math.cos(mu)*len*0.4,cy-s*Math.sin(mu)*len*0.4);lc.stroke();}
+    lc.setLineDash([]);
+  }
+
+  // particles
+  const sc=0.00055/Math.max(e.V,1)*Math.max(e.V,60); // base step
+  for(const p of parts){
+    const fl=p.inside?flowAt(p.x,p,e,g):{v:e.V,T:e.A.T*(1+0.2*M*M*0.25)};
+    const vis=0.0018+0.006*Math.min(fl.v/2500,1)+ (M<0.05?0:0.0006);
+    p.x+=vis*dt*60*(M<0.02?0.15:1);
+    let r;
+    const sgn=p.y<0?-1:1;
+    if(p.inside){
+      if(p.x<0) r=Math.abs(p.y);
+      else if(p.x<g.lip){const sr=spikeR(p.x,g);const f=Math.min(1,p.x/g.lip);const tgt=sr+p.lane*(R_WALL-sr);r=Math.abs(p.y)+(tgt-Math.abs(p.y))*f;}
+      else if(p.x<=1){const sr=spikeR(p.x,g),wr=wallR(p.x,g);r=sr+p.lane*(wr-sr);}
+      else {r=(p.lane*D.noz)*(1+(p.x-1)*0.6);}
+    } else {
+      const o=outerR(Math.min(Math.max(p.x,0),1),g); r=Math.max(Math.abs(p.y),p.x>-0.02&&p.x<1.02?o+0.012+(Math.abs(p.y)-R_WALL)*0.3:0);
+    }
+    lc.fillStyle=tempColor(fl.T);
+    const len=Math.max(2,vis*S*2.2);
+    lc.fillRect(X(p.x)-len,Y(sgn*r)-1,len,2.2);
+    if(p.x>1.35){Object.assign(p,newPart(-0.15-Math.random()*0.05));}
+  }
+
+  // engine body: wall (upper & lower)
+  for(const s of[1,-1]){
+    lc.beginPath();
+    for(let i=0;i<=100;i++){const x=g.lip+(1-g.lip)*i/100;lc.lineTo(X(x),Y(s*wallR(x,g)));}
+    for(let i=100;i>=0;i--){const x=g.lip+(1-g.lip)*i/100;lc.lineTo(X(x),Y(s*Math.max(outerR(x,g),wallR(x,g)+0.01)));}
+    lc.closePath();lc.fillStyle=D.paint;lc.fill();lc.strokeStyle='rgba(0,0,0,.35)';lc.lineWidth=1;lc.stroke();
+  }
+  // spike
+  lc.beginPath();lc.moveTo(X(0),cy);
+  for(let i=0;i<=80;i++){const x=g.cs*i/80;lc.lineTo(X(x),Y(spikeR(x,g)));}
+  for(let i=80;i>=0;i--){const x=g.cs*i/80;lc.lineTo(X(x),Y(-spikeR(x,g)));}
+  lc.closePath();lc.fillStyle='#9aa3b0';lc.fill();lc.stroke();
+  // fuel injectors + flame holders
+  lc.fillStyle='#555';
+  for(const s of[1,-1]){lc.fillRect(X(g.cs)-3,Y(s*R_WALL)-(s>0?0:8),6,8);
+    lc.beginPath();lc.moveTo(X(g.cs+0.01),Y(s*0.13));lc.lineTo(X(g.cs+0.04),Y(s*0.10));lc.lineTo(X(g.cs+0.04),Y(s*0.16));lc.fill();}
+  // flame glow
+  if(e.lit){const fx=X(g.cs+0.03),fl=(g.ce-g.cs)*S;
+    const gg=lc.createLinearGradient(fx,0,fx+fl*1.1,0);gg.addColorStop(0,'rgba(255,200,80,0)');gg.addColorStop(.3,`rgba(255,140,40,${.25+.35*D.thr})`);gg.addColorStop(1,'rgba(255,60,30,.15)');
+    lc.fillStyle=gg;lc.fillRect(fx,Y(R_WALL-0.01),fl*0.97,(R_WALL-0.01)*2*SY);
+    // exhaust plume
+    const ex=X(1),pl=Math.min(Math.max(e.thrust,0)/40000,1)*W*0.14+W*0.04*D.thr;
+    const pg=lc.createLinearGradient(ex,0,ex+pl,0);pg.addColorStop(0,'rgba(255,170,60,.55)');pg.addColorStop(1,'rgba(255,90,40,0)');
+    lc.fillStyle=pg;lc.beginPath();lc.moveTo(ex,Y(D.noz));lc.quadraticCurveTo(ex+pl*0.5,Y(D.noz*0.8),ex+pl,Y(0));lc.quadraticCurveTo(ex+pl*0.5,Y(-D.noz*0.8),ex,Y(-D.noz));lc.lineTo(ex,Y(-D.noz));lc.fill();
+  }
+  // labels
+  lc.font=`600 ${Math.max(11,W/80)}px ${getComputedStyle(document.body).fontFamily}`;lc.fillStyle='rgba(255,255,255,.85)';lc.textAlign='center';
+  const lab=[[g.Ls*0.5,'1 Inlet'],[(g.lip+g.cs)/2,'2 Diffuser'],[(g.cs+g.ce)/2,'3 Combustor'],[(g.ce+1)/2,'4 Nozzle']];
+  lab.forEach(([x,t])=>lc.fillText(t,X(x),Y(R_OUT+0.07)));
+  // colour key
+  const kx=14,ky=H-26,kw=Math.min(180,W*0.3);
+  for(let i=0;i<kw;i++){lc.fillStyle=tempColor(200+2100*i/kw);lc.fillRect(kx+i,ky,1,8);}
+  lc.fillStyle='rgba(255,255,255,.8)';lc.textAlign='left';lc.font=`${11*DPR}px ${getComputedStyle(document.body).fontFamily}`;
+  lc.fillText('cold air',kx,ky-4);lc.textAlign='right';lc.fillText('2300 K',kx+kw,ky-4);
+  lc.textAlign='right';lc.fillText('streak length = speed',W-14,H-14);
+
+  // stats
+  $('labStats').innerHTML=[
+    ['Air outside',`${e.A.T.toFixed(0)} K`],['Air density',`${e.A.rho.toFixed(3)} kg/m³`],
+    ['Speed',`${(e.V*3.6).toFixed(0)} km/h`],['Ram heating',`${e.T0.toFixed(0)} K`],
+    ['Ram squeeze',`${(e.pc/e.A.p).toFixed(1)}×`],['Flame temp',`${e.Tb.toFixed(0)} K`],
+    ['Exit speed',`${(e.Ve*3.6).toFixed(0)} km/h`],['Thrust (toy)',`${(e.thrust/1000).toFixed(1)} kN`]
+  ].map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
+  const st=$('labStatus');st.className='status '+e.cls;st.textContent=e.why;
+  tipText(e);
+}
+
+function tipText(e){
+  const s=e.spikeFit>.8?'Your spike suits this speed.':D.spike<e.spikeOpt?'Tip: a longer spike handles faster air better.':'Tip: a shorter spike works better at this speed.';
+  const n=e.nozFit>.8?' Nozzle size fits.':D.noz<e.nozOpt?' A bigger nozzle exit would help here.':' A smaller nozzle exit would help here.';
+  $('tip').textContent=s+n;
+}
+
+// ---------- FLIGHT challenge ----------
+const flyCv=$('flyCv'),fc=flyCv.getContext('2d');
+const GOALS=[['m2','Reach Mach 2',s=>s.M>=2],['m4','Reach Mach 4',s=>s.M>=4],['h20','Cruise above 20 km',s=>s.h>20000&&s.lit],
+  ['d300','Fly 300 km',s=>s.x>=300000],['d800','Fly 800 km',s=>s.x>=800000],['eco','Land with fuel to spare after 400 km',s=>s.landed&&s.x>400000&&s.fuel>0]];
+let done=new Set(),best=0;
+try{done=new Set(JSON.parse(localStorage.getItem('rj_goals')||'[]'));best=+localStorage.getItem('rj_best')||0;}catch(_){}
+function saveProg(){try{localStorage.setItem('rj_goals',JSON.stringify([...done]));localStorage.setItem('rj_best',best);}catch(_){}}
+function renderGoals(){$('goals').innerHTML=GOALS.map(([id,t])=>`<li class="${done.has(id)?'done':''}">${t}</li>`).join('');$('best').textContent=best.toFixed(0);}
+renderGoals();
+
+let S=null, keys={}, trail=[], clouds=[];
+for(let i=0;i<40;i++)clouds.push({x:Math.random()*400000,h:500+Math.random()*9000,w:3000+Math.random()*6000});
+function resetFlight(){
+  const h=+$('relAlt').value*1000,A=atmo(h);
+  S={x:0,h,V:+$('relMach').value*A.a,gam:0,fuel:D.fuel,t:0,running:false,landed:false,lit:false,M:+$('relMach').value,hot:0,msg:'Ready. Press Launch.',cls:'meh',thrust:0,carrier:0};
+  trail=[];
+}
+resetFlight();
+
+function stepFlight(dt){
+  if(!S.running||S.landed)return;
+  S.t+=dt;
+  const A=atmo(S.h); S.M=S.V/A.a;
+  const thr=S.fuel>0?D.thr:0;
+  const e=engine(S.h,S.M,thr);
+  S.lit=e.lit; let T=Math.max(e.thrust,0)*(e.lit?1:0);
+  if(e.hot&&e.lit){S.hot+=dt;} else S.hot=Math.max(0,S.hot-dt*0.5);
+  if(S.hot>4){S.landed=true;S.msg='The engine overheated. Ram air above about Mach 6 is too hot for this design. Ease off sooner next time.';S.cls='bad';finish();return;}
+  if(e.lit) S.fuel=Math.max(0,S.fuel-e.fuelFlow*dt*1.2);
+  const mass=900+D.comb*800+D.fuel*0.4+S.fuel;
+  const wave=0.12*Math.exp(-Math.pow(S.M-1.1,2)/0.15);
+  const cd=0.18+wave+0.15*Math.abs(S.gam)+(D.comb-0.14)*0.25;
+  const Dr=0.5*A.rho*S.V*S.V*0.3*cd;
+  // pilot input
+  const up=keys.up?1:0,dn=keys.dn?1:0;
+  const gTarget=(up-dn)*0.35;
+  S.gam+=(gTarget-S.gam)*Math.min(1,dt*1.5);
+  // needs enough dynamic pressure to hold a path, otherwise it sinks
+  const q=0.5*A.rho*S.V*S.V; if(q<9000) S.gam+=(-0.6-S.gam)*dt*(1-q/9000);
+  S.V+=((T-Dr)/mass-9.81*Math.sin(S.gam))*dt;
+  S.V=Math.max(S.V,30);
+  S.x+=S.V*Math.cos(S.gam)*dt; S.h+=S.V*Math.sin(S.gam)*dt;
+  S.h=Math.min(S.h,40000); S.thrust=T;
+  if(S.t%0.1<dt)trail.push([S.x,S.h,e.lit]); if(trail.length>400)trail.shift();
+  S.msg=S.fuel<=0?'Out of fuel. Glide as far as you can.':e.why; S.cls=S.fuel<=0?'meh':e.cls;
+  for(const [id,,f] of GOALS) if(!done.has(id)&&f(S)){done.add(id);renderGoals();saveProg();}
+  if(S.h<=0){S.h=0;S.landed=true;S.msg=`Touchdown after ${(S.x/1000).toFixed(1)} km.`+(S.fuel>0?` ${S.fuel.toFixed(0)} kg of fuel left.`:'');S.cls='ok';
+    for(const [id,,f] of GOALS) if(!done.has(id)&&f(S)){done.add(id);}
+    finish();}
+}
+function finish(){best=Math.max(best,S.x/1000);renderGoals();saveProg();}
+
+function drawRamjet(ctx,x,y,ang,len,lit,thr){
+  ctx.save();ctx.translate(x,y);ctx.rotate(-ang);
+  if(lit){const fl=len*(0.4+0.9*thr)*(0.85+Math.random()*0.3);
+    const g=ctx.createLinearGradient(-len/2,0,-len/2-fl,0);g.addColorStop(0,'rgba(255,220,120,.95)');g.addColorStop(.4,'rgba(255,120,40,.7)');g.addColorStop(1,'rgba(255,60,30,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-len/2,-len*.09);ctx.lineTo(-len/2-fl,0);ctx.lineTo(-len/2,len*.09);ctx.fill();}
+  ctx.fillStyle=D.paint;ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(len*0.32,-len*.11);ctx.lineTo(-len/2,-len*.11);ctx.lineTo(-len/2,len*.11);ctx.lineTo(len*0.32,len*.11);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#9aa3b0';ctx.beginPath();ctx.moveTo(len*0.5,0);ctx.lineTo(len*0.3,-len*.07);ctx.lineTo(len*0.3,len*.07);ctx.fill();
+  ctx.fillStyle=D.paint;ctx.beginPath();ctx.moveTo(-len*.3,-len*.11);ctx.lineTo(-len*.45,-len*.28);ctx.lineTo(-len*.5,-len*.11);ctx.fill();ctx.stroke();
+  ctx.restore();
+}
+
+function drawFly(){
+  const W=flyCv.width,H=flyCv.height,HMAX=35000;
+  const yOf=h=>H-30-(h/HMAX)*(H-50);
+  const k=Math.min(S.h/30000,1);
+  const g=fc.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,`rgb(${10+10*(1-k)},${20+60*(1-k)},${50+110*(1-k)})`);g.addColorStop(1,`rgb(${120-60*k},${170-90*k},${220-110*k})`);
+  fc.fillStyle=g;fc.fillRect(0,0,W,H);
+  // stars up high
+  if(k>.4){fc.fillStyle=`rgba(255,255,255,${(k-.4)*1.2})`;for(let i=0;i<60;i++){fc.fillRect((i*137.5+S.x*0.0005)%W,(i*71)%(H*0.5),1.5,1.5);}}
+  const mpp=120; // metres per px horizontally
+  const camX=S.x-W*0.3*mpp;
+  const sx=x=>(x-camX)/mpp;
+  // altitude grid
+  fc.strokeStyle='rgba(255,255,255,.12)';fc.fillStyle='rgba(255,255,255,.6)';fc.font=(11*DPR)+'px sans-serif';fc.textAlign='left';
+  for(let a=5000;a<=HMAX;a+=5000){const y=yOf(a);fc.beginPath();fc.moveTo(0,y);fc.lineTo(W,y);fc.stroke();fc.fillText(a/1000+' km',6,y-3);}
+  // clouds
+  fc.fillStyle='rgba(255,255,255,.55)';
+  for(const c of clouds){let cx=sx(c.x);cx=((cx%(W*3.3))+W*3.3)%(W*3.3)-W;fc.beginPath();fc.ellipse(cx,yOf(c.h),c.w/mpp,8,0,0,7);fc.fill();}
+  // ground
+  fc.fillStyle='#3d5a3a';fc.fillRect(0,H-30,W,30);
+  fc.fillStyle='#2e4a2c';for(let i=-1;i<W/40+1;i++){const gx=i*40-((S.x/mpp)%40);fc.fillRect(gx,H-30,20,4);}
+  // km markers
+  fc.fillStyle='rgba(255,255,255,.7)';fc.textAlign='center';
+  const step=50000;for(let m=Math.floor(camX/step)*step;m<camX+W*mpp;m+=step){if(m<0)continue;fc.fillText(m/1000+' km',sx(m),H-10);}
+  // trail
+  fc.lineWidth=2;
+  for(let i=1;i<trail.length;i++){const [x0,h0]=trail[i-1],[x1,h1,l]=trail[i];
+    fc.strokeStyle=l?'rgba(255,150,60,.6)':'rgba(255,255,255,.35)';fc.beginPath();fc.moveTo(sx(x0),yOf(h0));fc.lineTo(sx(x1),yOf(h1));fc.stroke();}
+  // carrier aircraft at release point
+  if(S.t<12){const cx=sx(-S.t*0+ -2000 + S.t*230),cy=yOf(+$('relAlt').value*1000)-14;
+    fc.fillStyle='rgba(230,230,235,.9)';fc.beginPath();fc.ellipse(cx,cy,40,6,0,0,7);fc.fill();fc.fillRect(cx-6,cy-2,14,-12);fc.fillRect(cx-36,cy-10,8,10);}
+  // vehicle (screen angle exaggerated for visibility)
+  const vy=yOf(S.h),vx=sx(S.x);
+  drawRamjet(fc,vx,vy,Math.atan2(Math.sin(S.gam)*3,Math.cos(S.gam)),46*DPR,S.lit&&S.running&&!S.landed&&S.fuel>0,D.thr);
+  // HUD
+  const A=atmo(S.h);
+  $('flyStats').innerHTML=[['Distance',`${(S.x/1000).toFixed(1)} km`],['Altitude',`${(S.h/1000).toFixed(2)} km`],['Mach',S.M.toFixed(2)],
+    ['Speed',`${(S.V*3.6).toFixed(0)} km/h`],['Thrust (toy)',`${(S.thrust/1000).toFixed(1)} kN`],['Fuel',`${S.fuel.toFixed(0)} kg`],
+    ['Air density',`${A.rho.toFixed(3)}`],['Heat',S.hot>0?`${Math.min(100,S.hot/4*100).toFixed(0)}%`:'OK']]
+    .map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
+  const st=$('flyStatus');st.className='status '+S.cls;st.textContent=S.msg;
+  // fuel bar
+  fc.fillStyle='rgba(0,0,0,.35)';fc.fillRect(W-130,10,120,10);fc.fillStyle='#f2c94c';fc.fillRect(W-130,10,120*S.fuel/D.fuel,10);
+  fc.fillStyle='#fff';fc.textAlign='right';fc.fillText('fuel',W-134,19);
+}
+
+// ---------- controls ----------
+function bindRange(id,fmt,set){const el=$(id),out=$(id+'V');const f=()=>{out.textContent=fmt(+el.value);set&&set(+el.value);};el.oninput=f;f();}
+bindRange('alt',v=>v+' km');
+bindRange('mach',v=>'Mach '+v.toFixed(2));
+bindRange('thr',v=>v+'%',v=>D.thr=v/100);
+bindRange('spike',v=>(v*100).toFixed(0)+'%',v=>D.spike=v);
+bindRange('comb',v=>(v*100).toFixed(0)+'%',v=>D.comb=v);
+bindRange('noz',v=>(v*100).toFixed(0)+'%',v=>D.noz=v);
+bindRange('fuel',v=>v+' kg',v=>{D.fuel=v;if(S&&!S.running)resetFlight();});
+bindRange('relAlt',v=>v+' km',()=>{if(S&&!S.running)resetFlight();});
+bindRange('relMach',v=>'Mach '+v.toFixed(1),()=>{if(S&&!S.running)resetFlight();});
+$('launch').onclick=()=>{if(S.landed)resetFlight();S.running=true;S.msg='Released! Engine lighting...';};
+$('reset').onclick=resetFlight;
+
+let tab='lab';
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));tab=b.dataset.tab;
+  $('lab').classList.toggle('hidden',tab!=='lab');$('fly').classList.toggle('hidden',tab!=='fly');
+  $('labCtl').classList.toggle('hidden',tab!=='lab');$('flyCtl').classList.toggle('hidden',tab!=='fly');resize();
+});
+const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'dn',KeyS:'dn'};
+addEventListener('keydown',ev=>{
+  if(tab!=='fly'||ev.target.tagName==='INPUT')return;
+  if(KEYMAP[ev.code]){keys[KEYMAP[ev.code]]=true;ev.preventDefault();}
+  if(ev.code==='KeyA'||ev.code==='KeyD'){const t=$('thr');t.value=+t.value+(ev.code==='KeyD'?5:-5);t.oninput();}
+  if(ev.code==='Space'){ev.preventDefault();$('launch').click();}
+});
+addEventListener('keyup',ev=>{if(KEYMAP[ev.code])keys[KEYMAP[ev.code]]=false;});
+for(const [id,k] of [['padUp','up'],['padDn','dn']]){const b=$(id);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;});
+  for(const n of['pointerup','pointerleave','pointercancel'])b.addEventListener(n,()=>keys[k]=false);}
+
+const DPR=Math.min(devicePixelRatio||1,2);
+function resize(){
+  for(const cv of[labCv,flyCv]){const w=cv.clientWidth||cv.parentElement.clientWidth;if(!w)continue;const dpr=DPR;
+    const h=cv===labCv?Math.max(260,Math.min(420,w*0.42)):Math.max(300,Math.min(460,w*0.5));
+    cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';cv.getContext('2d').setTransform(1,0,0,1,0,0);}
+}
+addEventListener('resize',resize);resize();
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000,0.05);last=now;
+  if(tab==='lab')drawLab(dt);
+  else{for(let i=0;i<4;i++)stepFlight(dt);drawFly();}  // flight runs at 4x real time
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
